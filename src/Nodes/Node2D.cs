@@ -8,16 +8,12 @@ public class Node2D
 	{
 		get
 		{
-			if (_rootNode == null)
-			{
-				_rootNode = this;
-			}
-
+			if (_rootNode == null) _rootNode = this;
 			return _rootNode;
 		}
 	}
 
-	private string _name = string.Empty;
+	private string _name;
 	public string Name
 	{
 		get => _name;
@@ -27,13 +23,13 @@ public class Node2D
 			_name = value;
 
 			StringChangedEventArgs args = new StringChangedEventArgs();
-			args.ValueBeforeChange = nameBeforeChange;
-			args.ValueAfterChange = Name;
+			args.StringBeforeChange = nameBeforeChange;
+			args.StringAfterChange = Name;
 			OnNameChanged(args);
 		}
 	}
 
-	private Point _position = new Point();
+	private Point _position;
 	public Point Position
 	{
 		get => _position;
@@ -43,8 +39,8 @@ public class Node2D
 			_position = value;
 
 			PointChangedEventArgs args = new PointChangedEventArgs();
-			args.ValueBeforeChange = positionBeforeChange;
-			args.ValueAfterChange = Position;
+			args.PointBeforeChange = positionBeforeChange;
+			args.PointAfterChange = Position;
 			OnPositionChanged(args);
 		}
 	}
@@ -53,18 +49,7 @@ public class Node2D
 	{
 		get
 		{
-			//Point position = Position;
-			if (Parent != null)
-			{
-				return Position + Parent.GlobalPosition;
-			//	Point parentGlobalPosition = Parent.GlobalPosition;
-			//	position.X += parentGlobalPosition.X;
-			//	position.Y += parentGlobalPosition.Y;
-			}
-			else
-			{
-				return Position;
-			}
+			return Parent != null ? Position + Parent.GlobalPosition : Position;
 		}
 	}
 
@@ -78,8 +63,8 @@ public class Node2D
 			_isVisible = value;
 
 			BoolChangedEventArgs args = new BoolChangedEventArgs();
-			args.ValueBeforeChange = isVisibleBeforeChange;
-			args.ValueAfterChange = IsVisible;
+			args.BoolBeforeChange = isVisibleBeforeChange;
+			args.BoolAfterChange = IsVisible;
 			OnIsVisibleChanged(args);
 		}
 	}
@@ -158,7 +143,7 @@ public class Node2D
 	{
 		SetPosition(Position + translation);
 	}
-	
+
 	public void Translate(int dx, int dy)
 	{
 		SetPosition(new Point(dx, dy));
@@ -200,14 +185,13 @@ public class Node2D
 		Children.Add(node);
 
 		NodeAddedEventArgs args = new NodeAddedEventArgs();
-		args.NodeAdded = node;
+		args.Node = node;
 		OnNodeAdded(args);
 	}
 
 	public void RemoveChild(int index)
 	{
-		Node2D node = Children[index];
-		RemoveChild(node);
+		RemoveChild(Children[index]);
 	}
 
 	public void RemoveChild(Node2D node)
@@ -216,7 +200,7 @@ public class Node2D
 		Children.Remove(node);
 
 		NodeRemovedEventArgs args = new NodeRemovedEventArgs();
-		args.NodeRemoved = node;
+		args.Node = node;
 		OnNodeRemoved(args);
 	}
 
