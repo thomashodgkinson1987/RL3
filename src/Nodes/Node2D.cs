@@ -19,12 +19,12 @@ public class Node2D
 		get => _name;
 		set
 		{
-			string nameBeforeChange = Name;
+			StringChangedEventArgs args = new StringChangedEventArgs();
+			args.StringBeforeChange = Name;
+			args.StringAfterChange = value;
+
 			_name = value;
 
-			StringChangedEventArgs args = new StringChangedEventArgs();
-			args.StringBeforeChange = nameBeforeChange;
-			args.StringAfterChange = Name;
 			OnNameChanged(args);
 		}
 	}
@@ -35,12 +35,12 @@ public class Node2D
 		get => _position;
 		set
 		{
-			Point positionBeforeChange = Position;
+			PointChangedEventArgs args = new PointChangedEventArgs();
+			args.PointBeforeChange = Position;
+			args.PointAfterChange = value;
+
 			_position = value;
 
-			PointChangedEventArgs args = new PointChangedEventArgs();
-			args.PointBeforeChange = positionBeforeChange;
-			args.PointAfterChange = Position;
 			OnPositionChanged(args);
 		}
 	}
@@ -59,12 +59,12 @@ public class Node2D
 		get => _isVisible;
 		set
 		{
-			bool isVisibleBeforeChange = IsVisible;
+			BoolChangedEventArgs args = new BoolChangedEventArgs();
+			args.BoolBeforeChange = IsVisible;
+			args.BoolAfterChange = value;
+
 			_isVisible = value;
 
-			BoolChangedEventArgs args = new BoolChangedEventArgs();
-			args.BoolBeforeChange = isVisibleBeforeChange;
-			args.BoolAfterChange = IsVisible;
 			OnIsVisibleChanged(args);
 		}
 	}
@@ -181,11 +181,13 @@ public class Node2D
 
 	public void AddChild(Node2D node)
 	{
+		NodeAddedEventArgs args = new NodeAddedEventArgs();
+		args.PreviousParent = node.Parent;
+		args.Node = node;
+
 		node.Parent = this;
 		Children.Add(node);
 
-		NodeAddedEventArgs args = new NodeAddedEventArgs();
-		args.Node = node;
 		OnNodeAdded(args);
 	}
 
@@ -196,11 +198,13 @@ public class Node2D
 
 	public void RemoveChild(Node2D node)
 	{
+		NodeRemovedEventArgs args = new NodeRemovedEventArgs();
+		args.Node = node;
+		args.PreviousParent = this;
+
 		node.Parent = null;
 		Children.Remove(node);
 
-		NodeRemovedEventArgs args = new NodeRemovedEventArgs();
-		args.Node = node;
 		OnNodeRemoved(args);
 	}
 
