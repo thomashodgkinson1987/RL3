@@ -220,57 +220,6 @@ public class Game : Node2D
 			m_uiScreen.IsVisible = !m_uiScreen.IsVisible;
 		}
 
-		if (consoleKeyInfo.KeyChar == 'u')
-		{
-			m_camera.TranslateX(1);
-		}
-		else if (consoleKeyInfo.KeyChar == 'i')
-		{
-			m_camera.TranslateX(-1);
-		}
-		else if (consoleKeyInfo.KeyChar == 'o')
-		{
-			m_camera.TranslateY(1);
-		}
-		else if (consoleKeyInfo.KeyChar == 'p')
-		{
-			m_camera.TranslateY(-1);
-		}
-
-		if (consoleKeyInfo.KeyChar == 'a')
-		{
-			m_floors.TranslateX(-1);
-		}
-		else if (consoleKeyInfo.KeyChar == 's')
-		{
-			m_floors.TranslateX(1);
-		}
-		else if (consoleKeyInfo.KeyChar == 'd')
-		{
-			m_floors.TranslateY(-1);
-		}
-		else if (consoleKeyInfo.KeyChar == 'f')
-		{
-			m_floors.TranslateY(1);
-		}
-
-		if (consoleKeyInfo.KeyChar == 'g')
-		{
-			m_walls.TranslateX(-1);
-		}
-		else if (consoleKeyInfo.KeyChar == 'h')
-		{
-			m_walls.TranslateX(1);
-		}
-		else if (consoleKeyInfo.KeyChar == 'j')
-		{
-			m_walls.TranslateY(-1);
-		}
-		else if (consoleKeyInfo.KeyChar == 'k')
-		{
-			m_walls.TranslateY(1);
-		}
-
 		if (consoleKeyInfo.KeyChar == 'z')
 		{
 			m_uiScreen.TranslateX(-1);
@@ -318,7 +267,6 @@ public class Game : Node2D
 		TickPlayer(consoleKeyInfo);
 
 		m_camera.CenterOnPosition(m_player.GlobalPosition);
-
 
 		int x = m_camera.Position.X;
 		int y = m_camera.Position.Y;
