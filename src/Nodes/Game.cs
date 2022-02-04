@@ -25,6 +25,11 @@ public class Game : Node2D
 
 	private Camera m_camera = new Camera();
 
+	private int m_boundsLeft;
+	private int m_boundsRight;
+	private int m_boundsUp;
+	private int m_boundsDown;
+
 	private Random m_rng;
 
 	#endregion // Fields
@@ -76,6 +81,11 @@ public class Game : Node2D
 
 		m_camera = RootNode.GetNode<Camera>("Camera");
 
+		m_boundsLeft = m_playerScreen.Position.X;
+		m_boundsRight = m_playerScreen.Position.X + m_playerScreen.Width - 1;
+		m_boundsUp = m_playerScreen.Position.Y;
+		m_boundsDown = m_playerScreen.Position.Y + m_playerScreen.Height - 1;
+
 		m_player.HealthChanged += delegate (object? sender, IntChangedEventArgs args)
 		{
 			m_screen.IsDirty = true;
@@ -105,6 +115,24 @@ public class Game : Node2D
 		{
 			m_screen.IsDirty = true;
 			m_floorsScreen.IsDirty = true;
+
+			if (args.Node.Position.X < m_boundsLeft)
+			{
+				m_boundsLeft = args.Node.Position.X;
+			}
+			else if (args.Node.Position.X > m_boundsRight)
+			{
+				m_boundsRight = args.Node.Position.X;
+			}
+
+			if (args.Node.Position.Y < m_boundsUp)
+			{
+				m_boundsUp = args.Node.Position.Y;
+			}
+			else if (args.Node.Position.Y > m_boundsDown)
+			{
+				m_boundsDown = args.Node.Position.Y;
+			}
 		};
 
 		m_floors.NodeRemoved += delegate (object? sender, NodeRemovedEventArgs args)
@@ -290,6 +318,32 @@ public class Game : Node2D
 		TickPlayer(consoleKeyInfo);
 
 		m_camera.CenterOnPosition(m_player.GlobalPosition);
+
+
+		int x = m_camera.Position.X;
+		int y = m_camera.Position.Y;
+		int w = m_camera.Width - 1;
+		int h = m_camera.Height - 1;
+
+		if (x < m_boundsLeft)
+		{
+			x = m_boundsLeft;
+		}
+		else if (x + w > m_boundsRight)
+		{
+			x = m_boundsRight - w;
+		}
+
+		if (y < m_boundsUp)
+		{
+			y = m_boundsUp;
+		}
+		else if (y + h > m_boundsDown)
+		{
+			y = m_boundsDown - h;
+		}
+
+		m_camera.SetPosition(x, y);
 	}
 
 	public void Draw()
