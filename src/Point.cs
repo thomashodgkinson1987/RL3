@@ -47,6 +47,19 @@ public class Point
 
 
 
+	#region Default variations
+
+	public static Point Zero { get; } = new Point();
+	public static Point One { get; } = new Point(1, 1);
+	public static Point Left { get; } = new Point(-1, 0);
+	public static Point Right { get; } = new Point(1, 0);
+	public static Point Up { get; } = new Point(0, -1);
+	public static Point Down { get; } = new Point(0, 1);
+
+	#endregion // Default variations
+
+
+
 	#region Properties
 
 	public int X { get; set; }

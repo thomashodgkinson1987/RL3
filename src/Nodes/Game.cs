@@ -23,6 +23,8 @@ public class Game : Node2D
 
 	private Screen m_uiScreen = new Screen();
 
+	private Camera m_camera = new Camera();
+
 	private Random m_rng;
 
 	#endregion // Fields
@@ -71,6 +73,8 @@ public class Game : Node2D
 		m_uiScreens = m_screens.GetNode<ScreenGroup>("UIScreens");
 
 		m_uiScreen = m_uiScreens.GetNode<Screen>("UIScreen");
+
+		m_camera = RootNode.GetNode<Camera>("Camera");
 
 		m_player.HealthChanged += delegate (object? sender, IntChangedEventArgs args)
 		{
@@ -127,22 +131,31 @@ public class Game : Node2D
 			m_wallsScreen.IsDirty = true;
 		};
 
-		for (int i = 0; i < m_floorsScreen.Height; i++)
+		m_camera.PositionChanged += delegate (object? sender, PointChangedEventArgs args)
 		{
-			for (int j = 0; j < m_floorsScreen.Width; j++)
+			m_screen.IsDirty = true;
+			m_floorsScreen.IsDirty = true;
+			m_wallsScreen.IsDirty = true;
+			m_playerScreen.IsDirty = true;
+			m_uiScreen.IsDirty = true;
+		};
+
+		for (int i = -m_floorsScreen.Height; i < m_floorsScreen.Height * 2; i++)
+		{
+			for (int j = -m_floorsScreen.Width; j < m_floorsScreen.Width * 2; j++)
 			{
-				AddFloor(j, i);
+				if (m_rng.Next(0, 100) < 95)
+				{
+					AddFloor(j, i);
+				}
 			}
 		}
 
-		for (int i = 0; i < m_wallsScreen.Height; i++)
+		for (int i = -m_wallsScreen.Height; i < m_wallsScreen.Height * 2; i++)
 		{
-			for (int j = 0; j < m_wallsScreen.Width; j++)
+			for (int j = -m_wallsScreen.Width; j < m_wallsScreen.Width * 2; j++)
 			{
-				if ((i == 0 || i == m_wallsScreen.Height - 1) || (j == 0 || j == m_wallsScreen.Width - 1))
-				{
-					AddWall(j, i);
-				}
+				if (m_rng.Next(0, 100) < 10) AddWall(j, i);
 			}
 		}
 
@@ -181,19 +194,43 @@ public class Game : Node2D
 
 		if (consoleKeyInfo.KeyChar == 'u')
 		{
-			m_screens.TranslateX(-1);
+			m_cameraPosition += Point.Left;
+
+			m_screen.IsDirty = true;
+			m_floorsScreen.IsDirty = true;
+			m_wallsScreen.IsDirty = true;
+			m_playerScreen.IsDirty = true;
+			m_uiScreen.IsDirty = true;
 		}
 		else if (consoleKeyInfo.KeyChar == 'i')
 		{
-			m_screens.TranslateX(1);
+			m_cameraPosition += Point.Right;
+
+			m_screen.IsDirty = true;
+			m_floorsScreen.IsDirty = true;
+			m_wallsScreen.IsDirty = true;
+			m_playerScreen.IsDirty = true;
+			m_uiScreen.IsDirty = true;
 		}
 		else if (consoleKeyInfo.KeyChar == 'o')
 		{
-			m_screens.TranslateY(-1);
+			m_cameraPosition += Point.Up;
+
+			m_screen.IsDirty = true;
+			m_floorsScreen.IsDirty = true;
+			m_wallsScreen.IsDirty = true;
+			m_playerScreen.IsDirty = true;
+			m_uiScreen.IsDirty = true;
 		}
 		else if (consoleKeyInfo.KeyChar == 'p')
 		{
-			m_screens.TranslateY(1);
+			m_cameraPosition += Point.Down;
+
+			m_screen.IsDirty = true;
+			m_floorsScreen.IsDirty = true;
+			m_wallsScreen.IsDirty = true;
+			m_playerScreen.IsDirty = true;
+			m_uiScreen.IsDirty = true;
 		}
 
 		if (consoleKeyInfo.KeyChar == 'a')
@@ -294,7 +331,7 @@ public class Game : Node2D
 			{
 				if (!floor.IsVisible) continue;
 
-				Point floorGlobalPosition = floorsGlobalPosition + floor.Position;
+				Point floorGlobalPosition = floorsGlobalPosition + floor.Position + m_cameraPosition;
 				if (m_floorsScreen.IsPositionOnScreen(floorGlobalPosition))
 				{
 					m_floorsScreen.SetSymbol(floorGlobalPosition, floor.Symbol);
@@ -311,7 +348,7 @@ public class Game : Node2D
 			{
 				if (!wall.IsVisible) continue;
 
-				Point wallGlobalPosition = wallsGlobalPosition + wall.Position;
+				Point wallGlobalPosition = wallsGlobalPosition + wall.Position + m_cameraPosition;
 				if (m_wallsScreen.IsPositionOnScreen(wallGlobalPosition))
 				{
 					m_wallsScreen.SetSymbol(wallGlobalPosition, wall.Symbol);
@@ -325,7 +362,7 @@ public class Game : Node2D
 			m_playerScreen.Clear();
 			if (m_player.IsVisible)
 			{
-				Point playerGlobalPosition = m_player.GlobalPosition;
+				Point playerGlobalPosition = m_player.GlobalPosition + m_cameraPosition;
 				if (m_playerScreen.IsPositionOnScreen(playerGlobalPosition))
 				{
 					m_playerScreen.SetSymbol(playerGlobalPosition, m_player.Symbol);
@@ -542,7 +579,7 @@ public class Game : Node2D
 
 		m_uiScreen.DrawText(1, 1, Screen.EDirection.Right, $"Player HP: {m_player.Health}/{m_player.MaxHealth}");
 		m_uiScreen.DrawText(1, 2, Screen.EDirection.Right, $"Player position: x={m_player.Position.X} y={m_player.Position.Y} gx={m_player.GlobalPosition.X} gy={m_player.GlobalPosition.Y}");
-		m_uiScreen.DrawText(1, 3, Screen.EDirection.Right, $"Screens position: x={m_screens.Position.X} y={m_screens.Position.Y} gx={m_screens.GlobalPosition.X} gy={m_screens.GlobalPosition.Y}");
+		m_uiScreen.DrawText(1, 3, Screen.EDirection.Right, $"Camera position: x={m_cameraPosition.X} y={m_cameraPosition.Y} w={m_cameraWidth} h={m_cameraHeight}");
 		m_uiScreen.DrawText(1, 4, Screen.EDirection.Right, $"Floors position: x={m_floors.Position.X} y={m_floors.Position.Y} gx={m_floors.GlobalPosition.X} gy={m_floors.GlobalPosition.Y}");
 		m_uiScreen.DrawText(1, 5, Screen.EDirection.Right, $"Walls position: x={m_walls.Position.X} y={m_walls.Position.Y} gx={m_walls.GlobalPosition.X} gy={m_walls.GlobalPosition.Y}");
 		m_uiScreen.DrawText(1, 6, Screen.EDirection.Right, $"UI position: x={m_uiScreen.Position.X} y={m_uiScreen.Position.Y} gx={m_uiScreen.GlobalPosition.X} gy={m_uiScreen.GlobalPosition.Y}");

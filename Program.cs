@@ -108,6 +108,12 @@ class Program
 
 		//
 
+		Camera camera = new Camera("Camera", playerScreen.Position.X, playerScreen.Position.Y, playerScreen.Width, playerScreen.Height);
+
+		rootNode.AddChild(camera);
+
+		//
+
 		rootNode.Init();
 
 		//
