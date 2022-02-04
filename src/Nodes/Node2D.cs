@@ -159,24 +159,42 @@ public class Node2D
 		Translate(0, dy);
 	}
 
-	public Node2D? GetNode(int index)
+	public Node2D GetNode(int index)
 	{
 		return Children[index];
 	}
 
-	public Node2D? GetNode(string name)
+	public Node2D GetNode(string name)
 	{
-		return Children.Find(_ => _.Name == name);
+		Node2D? node = Children.Find(_ => _.Name == name);
+
+		if (node == null)
+		{
+			throw new Exception();
+		}
+		else
+		{
+			return node;
+		}
 	}
 
-	public T? GetNode<T>(int index) where T : Node2D
+	public T GetNode<T>(int index) where T : Node2D
 	{
 		return (T)Children[index];
 	}
 
-	public T? GetNode<T>(string name) where T : Node2D
+	public T GetNode<T>(string name) where T : Node2D
 	{
-		return (T?)Children.Find(_ => _.Name == name);
+		T? node = (T?)Children.Find(_ => _.Name == name);
+
+		if (node != null && node is T t)
+		{
+			return t;
+		}
+		else
+		{
+			throw new Exception();
+		}
 	}
 
 	public void AddChild(Node2D node)

@@ -3,25 +3,25 @@ public class Game : Node2D
 
 	#region Fields
 
-	private Node2D m_world;
+	private Node2D m_world = new Node2D();
 
-	private Node2D m_floors;
-	private Node2D m_walls;
-	private Player m_player;
+	private Node2D m_floors = new Node2D();
+	private Node2D m_walls = new Node2D();
+	private Player m_player = new Player();
 
-	private ScreenGroup m_screens;
+	private ScreenGroup m_screens = new ScreenGroup();
 
-	private Screen m_screen;
+	private Screen m_screen = new Screen();
 
-	private ScreenGroup m_gameScreens;
+	private ScreenGroup m_gameScreens = new ScreenGroup();
 
-	private Screen m_floorsScreen;
-	private Screen m_wallsScreen;
-	private Screen m_playerScreen;
+	private Screen m_floorsScreen = new Screen();
+	private Screen m_wallsScreen = new Screen();
+	private Screen m_playerScreen = new Screen();
 
-	private ScreenGroup m_uiScreens;
+	private ScreenGroup m_uiScreens = new ScreenGroup();
 
-	private Screen m_uiScreen;
+	private Screen m_uiScreen = new Screen();
 
 	private Random m_rng;
 
@@ -127,19 +127,19 @@ public class Game : Node2D
 			m_wallsScreen.IsDirty = true;
 		};
 
-		for (int i = 0; i < m_screen.Height; i++)
+		for (int i = 0; i < m_floorsScreen.Height; i++)
 		{
-			for (int j = 0; j < m_screen.Width; j++)
+			for (int j = 0; j < m_floorsScreen.Width; j++)
 			{
 				AddFloor(j, i);
 			}
 		}
 
-		for (int i = 0; i < m_screen.Height; i++)
+		for (int i = 0; i < m_wallsScreen.Height; i++)
 		{
-			for (int j = 0; j < m_screen.Width; j++)
+			for (int j = 0; j < m_wallsScreen.Width; j++)
 			{
-				if ((i == 0 || i == m_screen.Height - 1) || (j == 0 || j == m_screen.Width - 1))
+				if ((i == 0 || i == m_wallsScreen.Height - 1) || (j == 0 || j == m_wallsScreen.Width - 1))
 				{
 					AddWall(j, i);
 				}
@@ -279,60 +279,67 @@ public class Game : Node2D
 
 	public void Draw()
 	{
-		//if (m_isScreenDirty)
-		//{
-		//m_screen.IsDirty = false;
-		m_screen.Clear();
-		//}
-
-		//if (m_isFloorDirty)
-		//{
-		//m_floorsScreen.IsDirty = false;
-		m_floorsScreen.Clear();
-		Point floorContainerGlobalPosition = m_floors.GlobalPosition;
-		foreach (Floor floor in m_floors.Children)
+		if (m_screen.IsDirty)
 		{
-			Point floorGlobalPosition = new Point(floorContainerGlobalPosition.X + floor.Position.X, floorContainerGlobalPosition.Y + floor.Position.Y);
-			if (m_floorsScreen.IsPositionOnScreen(floorGlobalPosition))
+			m_screen.IsDirty = false;
+			m_screen.Clear();
+		}
+
+		if (m_floorsScreen.IsDirty)
+		{
+			m_floorsScreen.IsDirty = false;
+			m_floorsScreen.Clear();
+			Point floorsGlobalPosition = m_floors.GlobalPosition;
+			foreach (GameObject floor in m_floors.Children)
 			{
-				m_floorsScreen.SetSymbol(floorGlobalPosition, floor.Symbol);
+				if (!floor.IsVisible) continue;
+
+				Point floorGlobalPosition = floorsGlobalPosition + floor.Position;
+				if (m_floorsScreen.IsPositionOnScreen(floorGlobalPosition))
+				{
+					m_floorsScreen.SetSymbol(floorGlobalPosition, floor.Symbol);
+				}
 			}
 		}
-		//}
 
-		//if (m_isWallsDirty)
-		//{
-		//m_wallsScreen.IsDirty = false;
-		m_wallsScreen.Clear();
-		Point wallsContainerGlobalPosition = m_walls.GlobalPosition;
-		foreach (Wall wall in m_walls.Children)
+		if (m_wallsScreen.IsDirty)
 		{
-			Point wallsGlobalPosition = new Point(wallsContainerGlobalPosition.X + wall.Position.X, wallsContainerGlobalPosition.Y + wall.Position.Y);
-			if (m_wallsScreen.IsPositionOnScreen(wallsGlobalPosition))
+			m_wallsScreen.IsDirty = false;
+			m_wallsScreen.Clear();
+			Point wallsGlobalPosition = m_walls.GlobalPosition;
+			foreach (GameObject wall in m_walls.Children)
 			{
-				m_wallsScreen.SetSymbol(wallsGlobalPosition, wall.Symbol);
+				if (!wall.IsVisible) continue;
+
+				Point wallGlobalPosition = wallsGlobalPosition + wall.Position;
+				if (m_wallsScreen.IsPositionOnScreen(wallGlobalPosition))
+				{
+					m_wallsScreen.SetSymbol(wallGlobalPosition, wall.Symbol);
+				}
 			}
 		}
-		//}
 
-		//if (m_isPlayerDirty)
-		//{
-		//m_playerScreen.IsDirty = false;
-		m_playerScreen.Clear();
-		Point playerGlobalPosition = m_player.GlobalPosition;
-		if (m_playerScreen.IsPositionOnScreen(playerGlobalPosition))
+		if (m_playerScreen.IsDirty)
 		{
-			m_playerScreen.SetSymbol(playerGlobalPosition, m_player.Symbol);
+			m_playerScreen.IsDirty = false;
+			m_playerScreen.Clear();
+			if (m_player.IsVisible)
+			{
+				Point playerGlobalPosition = m_player.GlobalPosition;
+				if (m_playerScreen.IsPositionOnScreen(playerGlobalPosition))
+				{
+					m_playerScreen.SetSymbol(playerGlobalPosition, m_player.Symbol);
+				}
+			}
 		}
-		//}
 
-		//if (m_isUIDirty)
-		//{
-		//m_uiScreen.IsDirty = false;
-		UpdateUI();
-		//}
+		if (m_uiScreen.IsDirty)
+		{
+			m_uiScreen.IsDirty = false;
+			UpdateUI();
+		}
 
-		if (m_screen.IsVisible)
+		if (m_screens.IsVisible && m_screen.IsVisible)
 		{
 			if (m_gameScreens.IsVisible)
 			{
@@ -395,13 +402,13 @@ public class Game : Node2D
 
 	public void AddFloor(int x, int y)
 	{
-		Floor floor = new Floor(x, y);
+		GameObject floor = new GameObject("Floor", x, y, '.');
 		m_floors.AddChild(floor);
 	}
 
 	public void AddWall(int x, int y)
 	{
-		Wall wall = new Wall(x, y);
+		GameObject wall = new GameObject("Wall", x, y, '#');
 		m_walls.AddChild(wall);
 	}
 
@@ -480,43 +487,44 @@ public class Game : Node2D
 		m_player.SetPosition(position.X, position.Y);
 	}
 
-	private bool IsClear(int x, int y)
+	private bool IsClear(Point position)
 	{
-		Point floorContainerGlobalPosition = m_floors.GlobalPosition;
-		List<Node2D> floorNodes = new List<Node2D>();
+		Point floorsGlobalPosition = m_floors.GlobalPosition;
+		List<Node2D> floors = new List<Node2D>();
 		for (int i = 0; i < m_floors.Children.Count; i++)
 		{
-			Node2D node = m_floors.Children[i];
+			Node2D floor = m_floors.Children[i];
 
-			Point globalPosition = node.Position;
-			globalPosition.X += floorContainerGlobalPosition.X;
-			globalPosition.Y += floorContainerGlobalPosition.Y;
+			Point floorGlobalPosition = floor.Position + floorsGlobalPosition;
 
-			if (globalPosition.X == x && globalPosition.Y == y)
+			if (position == floorGlobalPosition)
 			{
-				floorNodes.Add(node);
+				floors.Add(floor);
 			}
 		}
-		bool isFloor = floorNodes.Count > 0;
+		bool isFloor = floors.Count > 0;
 
-		Point wallsContainerGlobalPosition = m_walls.GlobalPosition;
-		List<Node2D> wallNodes = new List<Node2D>();
+		Point wallsGlobalPosition = m_walls.GlobalPosition;
+		List<Node2D> walls = new List<Node2D>();
 		for (int i = 0; i < m_walls.Children.Count; i++)
 		{
-			Node2D node = m_walls.Children[i];
+			Node2D wall = m_walls.Children[i];
 
-			Point globalPosition = node.Position;
-			globalPosition.X += wallsContainerGlobalPosition.X;
-			globalPosition.Y += wallsContainerGlobalPosition.Y;
+			Point wallGlobalPosition = wall.Position + wallsGlobalPosition;
 
-			if (globalPosition.X == x && globalPosition.Y == y)
+			if (position == wallGlobalPosition)
 			{
-				wallNodes.Add(node);
+				walls.Add(wall);
 			}
 		}
-		bool isWall = wallNodes.Count > 0;
+		bool isWall = walls.Count > 0;
 
 		return isFloor && !isWall;
+	}
+
+	private bool IsClear(int x, int y)
+	{
+		return IsClear(new Point(x, y));
 	}
 
 	private void UpdateUI()

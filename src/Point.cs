@@ -33,6 +33,16 @@ public class Point
 		return new Point(a.X - 1, a.Y - 1);
 	}
 
+	public static bool operator ==(Point a, Point b)
+	{
+		return a.X == b.X && a.Y == b.Y;
+	}
+
+	public static bool operator !=(Point a, Point b)
+	{
+		return a.X != b.X || a.Y != b.Y;
+	}
+
 	#endregion // Operator overloads
 
 
@@ -57,6 +67,22 @@ public class Point
 	public Point() : this(0, 0) { }
 
 	#endregion // Contructors
+
+
+
+	#region Public methods
+
+	public override bool Equals(object? obj)
+	{
+		if (obj != null && obj is Point point)
+		{
+			return point == this;
+		}
+		
+		return false;
+	}
+
+	#endregion // Public methods
 
 }
 
