@@ -7,8 +7,8 @@ class Program
 
 		int screenX = 0;
 		int screenY = 0;
-		int screenW = 136;
-		int screenH = 38;
+		int screenW = 64;
+		int screenH = 32;
 
 		int playerX = 1;
 		int playerY = 1;
