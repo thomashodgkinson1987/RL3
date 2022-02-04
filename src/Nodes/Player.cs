@@ -75,6 +75,81 @@ public class Player : GameObject
 
 
 
+	#region Public methods
+
+	public void Tick(ConsoleKeyInfo consoleKeyInfo, Game game)
+	{
+		Point position = Position;
+		Point globalPosition = GlobalPosition;
+
+		if (consoleKeyInfo.KeyChar == '4')
+		{
+			if (game.IsClear(globalPosition.X - 1, globalPosition.Y))
+			{
+				position.X--;
+			}
+		}
+		else if (consoleKeyInfo.KeyChar == '6')
+		{
+			if (game.IsClear(globalPosition.X + 1, globalPosition.Y))
+			{
+				position.X++;
+			}
+		}
+		else if (consoleKeyInfo.KeyChar == '8')
+		{
+			if (game.IsClear(globalPosition.X, globalPosition.Y - 1))
+			{
+				position.Y--;
+			}
+		}
+		else if (consoleKeyInfo.KeyChar == '2')
+		{
+			if (game.IsClear(globalPosition.X, globalPosition.Y + 1))
+			{
+				position.Y++;
+			}
+		}
+		else if (consoleKeyInfo.KeyChar == '7')
+		{
+			if (game.IsClear(globalPosition.X - 1, globalPosition.Y - 1))
+			{
+				position.X--;
+				position.Y--;
+			}
+		}
+		else if (consoleKeyInfo.KeyChar == '9')
+		{
+			if (game.IsClear(globalPosition.X + 1, globalPosition.Y - 1))
+			{
+				position.X++;
+				position.Y--;
+			}
+		}
+		else if (consoleKeyInfo.KeyChar == '1')
+		{
+			if (game.IsClear(globalPosition.X - 1, globalPosition.Y + 1))
+			{
+				position.X--;
+				position.Y++;
+			}
+		}
+		else if (consoleKeyInfo.KeyChar == '3')
+		{
+			if (game.IsClear(globalPosition.X + 1, globalPosition.Y + 1))
+			{
+				position.X++;
+				position.Y++;
+			}
+		}
+
+		SetPosition(position);
+	}
+
+	#endregion // Public methods
+
+
+
 	#region Protected methods
 
 	protected virtual void OnHealthChanged(IntChangedEventArgs e)

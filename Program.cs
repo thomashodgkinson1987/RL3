@@ -30,8 +30,6 @@ class Program
 			playerY = int.Parse(args[5]);
 		}
 
-		//
-
 		Random rng = new Random();
 
 		//
