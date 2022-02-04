@@ -45,7 +45,7 @@ class Program
 
 		Node2D floors = new Node2D("Floors");
 		Node2D walls = new Node2D("Walls");
-		Player player = new Player("Player", playerX, playerY);
+		Player player = new Player("Player", playerX, playerY, 10);
 
 		world.AddChild(floors);
 		world.AddChild(walls);
@@ -89,7 +89,7 @@ class Program
 		ScreenGroup uiScreens = new ScreenGroup("UIScreens");
 
 		int uiWindowX = screenX;
-		int uiWindowY = (int)MathF.Ceiling((screenH / 4f) * 3);
+		int uiWindowY = screenY + (int)MathF.Ceiling((screenH / 4f) * 3);
 		int uiWindowW = screenW;
 		int uiWindowH = (int)MathF.Floor(screenH / 4f);
 

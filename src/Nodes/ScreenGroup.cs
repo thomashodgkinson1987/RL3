@@ -43,7 +43,7 @@ public class ScreenGroup : Node2D
 
 		NodeAdded += delegate (object? sender, NodeAddedEventArgs e)
 		{
-			if (e.NodeAdded is Screen screen)
+			if (e.Node is Screen screen)
 			{
 				AddScreen(screen);
 			}
@@ -51,7 +51,7 @@ public class ScreenGroup : Node2D
 
 		NodeRemoved += delegate (object? sender, NodeRemovedEventArgs e)
 		{
-			if (e.NodeRemoved is Screen screen)
+			if (e.Node is Screen screen)
 			{
 				RemoveScreen(screen);
 			}

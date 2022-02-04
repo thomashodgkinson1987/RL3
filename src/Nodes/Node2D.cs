@@ -146,7 +146,7 @@ public class Node2D
 
 	public void Translate(int dx, int dy)
 	{
-		SetPosition(new Point(dx, dy));
+		Translate(new Point(dx, dy));
 	}
 
 	public void TranslateX(int dx)

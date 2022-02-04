@@ -1,11 +1,46 @@
-public class Player : Node2D
+public class Player : GameObject
 {
 
 	#region Properties
 
-	public char Symbol { get; set; }
-	public int Health { get; set; } = 10;
-	public int MaxHealth { get; set; } = 10;
+	private int _health;
+	public int Health
+	{
+		get => _health;
+		set
+		{
+			IntChangedEventArgs args = new IntChangedEventArgs();
+			args.IntBeforeChange = _health;
+
+			_health = value >= 0 && value <= MaxHealth ? value : _health;
+
+			args.IntAfterChange = _health;
+			OnHealthChanged(args);
+		}
+	}
+
+	private int _maxHealth;
+	public int MaxHealth
+	{
+		get => _maxHealth;
+		set
+		{
+			IntChangedEventArgs args = new IntChangedEventArgs();
+			args.IntBeforeChange = _maxHealth;
+
+			int newMaxHealth = value >= 0 && value <= 99 ? value : _maxHealth;
+
+			if (Health > newMaxHealth)
+			{
+				Health = newMaxHealth;
+			}
+
+			_maxHealth = newMaxHealth;
+
+			args.IntAfterChange = _maxHealth;
+			OnMaxHealthChanged(args);
+		}
+	}
 
 	#endregion // Properties
 
@@ -22,59 +57,21 @@ public class Player : Node2D
 
 	#region Constructors
 
-	public Player(string name, int x, int y, char symbol, int health, int maxHealth) : base(name, x, y)
+	public Player(string name, int x, int y, int health) : base(name, x, y, '@')
 	{
-		Symbol = symbol;
-		Health = health;
-		MaxHealth = maxHealth;
+		_health = health;
+		_maxHealth = health;
 	}
 
-	public Player(int x, int y, char symbol, int health, int maxHealth) : this("Player", x, y, symbol, health, maxHealth) { }
+	public Player(string name, int health) : this(name, 0, 0, health) { }
 
-	public Player(char symbol, int health, int maxHealth) : this(0, 0, symbol, health, maxHealth) { }
+	public Player(int x, int y, int health) : this("Player", x, y, health) { }
 
-	public Player(char symbol, int health) : this(symbol, health, health) { }
+	public Player(int health) : this("Player", 0, 0, health) { }
 
-	public Player(char symbol) : this(symbol, 10) { }
-
-	public Player(string name, int x, int y) : this(name, x, y, '@', 10, 10) { }
-
-	public Player() : this('@') { }
+	public Player() : this(10) { }
 
 	#endregion // Constructors
-
-
-
-	#region Public methods
-
-	public void SetHealth(int health)
-	{
-		int healthBeforeChange = Health;
-		Health = health >= 0 && health <= MaxHealth ? health : Health;
-
-		IntChangedEventArgs args = new IntChangedEventArgs();
-		args.ValueBeforeChange = healthBeforeChange;
-		args.ValueAfterChange = Health;
-		OnHealthChanged(args);
-	}
-
-	public void SetMaxHealth(int maxHealth)
-	{
-		int maxHealthBeforeChange = MaxHealth;
-		MaxHealth = maxHealth;
-
-		if (Health > MaxHealth)
-		{
-			SetHealth(MaxHealth);
-		}
-
-		IntChangedEventArgs args = new IntChangedEventArgs();
-		args.ValueBeforeChange = maxHealthBeforeChange;
-		args.ValueAfterChange = MaxHealth;
-		OnMaxHealthChanged(args);
-	}
-
-	#endregion // Public methods
 
 
 

@@ -181,19 +181,19 @@ public class Game : Node2D
 
 		if (consoleKeyInfo.KeyChar == 'u')
 		{
-			m_screen.TranslateX(-1);
+			m_screens.TranslateX(-1);
 		}
 		else if (consoleKeyInfo.KeyChar == 'i')
 		{
-			m_screen.TranslateX(1);
+			m_screens.TranslateX(1);
 		}
 		else if (consoleKeyInfo.KeyChar == 'o')
 		{
-			m_screen.TranslateY(-1);
+			m_screens.TranslateY(-1);
 		}
 		else if (consoleKeyInfo.KeyChar == 'p')
 		{
-			m_screen.TranslateY(1);
+			m_screens.TranslateY(1);
 		}
 
 		if (consoleKeyInfo.KeyChar == 'a')
@@ -262,16 +262,16 @@ public class Game : Node2D
 
 		if (consoleKeyInfo.KeyChar == 'b')
 		{
-			m_player.SetHealth(m_rng.Next(0, 100));
+			m_player.Health = m_rng.Next(0, 100);
 		}
 		else if (consoleKeyInfo.KeyChar == 'n')
 		{
-			m_player.SetMaxHealth(m_rng.Next(0, 100));
+			m_player.MaxHealth = m_rng.Next(0, 100);
 		}
 		else if (consoleKeyInfo.KeyChar == 'm')
 		{
-			m_player.SetMaxHealth(99);
-			m_player.SetHealth(99);
+			m_player.MaxHealth = 99;
+			m_player.Health = 99;
 		}
 
 		TickPlayer(consoleKeyInfo);
@@ -540,11 +540,12 @@ public class Game : Node2D
 		m_uiScreen.SetSymbol(0, m_uiScreen.Height - 1, '└');
 		m_uiScreen.SetSymbol(m_uiScreen.Width - 1, m_uiScreen.Height - 1, '┘');
 
-		string spaces = m_player.Health < 10 ? "  " : " ";
-
-		m_uiScreen.DrawText(1, 1, Screen.EDirection.Right, $"HP:{spaces}{m_player.Health}/{m_player.MaxHealth}");
-		m_uiScreen.DrawText(1, 2, Screen.EDirection.Right, $"x={m_player.Position.X} y={m_player.Position.Y} gx={m_player.GlobalPosition.X} gy={m_player.GlobalPosition.Y}");
-
+		m_uiScreen.DrawText(1, 1, Screen.EDirection.Right, $"Player HP: {m_player.Health}/{m_player.MaxHealth}");
+		m_uiScreen.DrawText(1, 2, Screen.EDirection.Right, $"Player position: x={m_player.Position.X} y={m_player.Position.Y} gx={m_player.GlobalPosition.X} gy={m_player.GlobalPosition.Y}");
+		m_uiScreen.DrawText(1, 3, Screen.EDirection.Right, $"Screens position: x={m_screens.Position.X} y={m_screens.Position.Y} gx={m_screens.GlobalPosition.X} gy={m_screens.GlobalPosition.Y}");
+		m_uiScreen.DrawText(1, 4, Screen.EDirection.Right, $"Floors position: x={m_floors.Position.X} y={m_floors.Position.Y} gx={m_floors.GlobalPosition.X} gy={m_floors.GlobalPosition.Y}");
+		m_uiScreen.DrawText(1, 5, Screen.EDirection.Right, $"Walls position: x={m_walls.Position.X} y={m_walls.Position.Y} gx={m_walls.GlobalPosition.X} gy={m_walls.GlobalPosition.Y}");
+		m_uiScreen.DrawText(1, 6, Screen.EDirection.Right, $"UI position: x={m_uiScreen.Position.X} y={m_uiScreen.Position.Y} gx={m_uiScreen.GlobalPosition.X} gy={m_uiScreen.GlobalPosition.Y}");
 	}
 
 	#endregion // Private methods
