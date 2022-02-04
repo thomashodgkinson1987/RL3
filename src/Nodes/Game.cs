@@ -194,43 +194,19 @@ public class Game : Node2D
 
 		if (consoleKeyInfo.KeyChar == 'u')
 		{
-			m_cameraPosition += Point.Left;
-
-			m_screen.IsDirty = true;
-			m_floorsScreen.IsDirty = true;
-			m_wallsScreen.IsDirty = true;
-			m_playerScreen.IsDirty = true;
-			m_uiScreen.IsDirty = true;
+			m_camera.TranslateX(1);
 		}
 		else if (consoleKeyInfo.KeyChar == 'i')
 		{
-			m_cameraPosition += Point.Right;
-
-			m_screen.IsDirty = true;
-			m_floorsScreen.IsDirty = true;
-			m_wallsScreen.IsDirty = true;
-			m_playerScreen.IsDirty = true;
-			m_uiScreen.IsDirty = true;
+			m_camera.TranslateX(-1);
 		}
 		else if (consoleKeyInfo.KeyChar == 'o')
 		{
-			m_cameraPosition += Point.Up;
-
-			m_screen.IsDirty = true;
-			m_floorsScreen.IsDirty = true;
-			m_wallsScreen.IsDirty = true;
-			m_playerScreen.IsDirty = true;
-			m_uiScreen.IsDirty = true;
+			m_camera.TranslateY(1);
 		}
 		else if (consoleKeyInfo.KeyChar == 'p')
 		{
-			m_cameraPosition += Point.Down;
-
-			m_screen.IsDirty = true;
-			m_floorsScreen.IsDirty = true;
-			m_wallsScreen.IsDirty = true;
-			m_playerScreen.IsDirty = true;
-			m_uiScreen.IsDirty = true;
+			m_camera.TranslateY(-1);
 		}
 
 		if (consoleKeyInfo.KeyChar == 'a')
@@ -312,6 +288,8 @@ public class Game : Node2D
 		}
 
 		TickPlayer(consoleKeyInfo);
+
+		m_camera.CenterOnPosition(m_player.GlobalPosition);
 	}
 
 	public void Draw()
@@ -326,12 +304,12 @@ public class Game : Node2D
 		{
 			m_floorsScreen.IsDirty = false;
 			m_floorsScreen.Clear();
-			Point floorsGlobalPosition = m_floors.GlobalPosition;
+			Point floorsGlobalPosition = m_floors.GlobalPosition - m_camera.GlobalPosition;
 			foreach (GameObject floor in m_floors.Children)
 			{
 				if (!floor.IsVisible) continue;
 
-				Point floorGlobalPosition = floorsGlobalPosition + floor.Position + m_cameraPosition;
+				Point floorGlobalPosition = floorsGlobalPosition + floor.Position;
 				if (m_floorsScreen.IsPositionOnScreen(floorGlobalPosition))
 				{
 					m_floorsScreen.SetSymbol(floorGlobalPosition, floor.Symbol);
@@ -343,12 +321,12 @@ public class Game : Node2D
 		{
 			m_wallsScreen.IsDirty = false;
 			m_wallsScreen.Clear();
-			Point wallsGlobalPosition = m_walls.GlobalPosition;
+			Point wallsGlobalPosition = m_walls.GlobalPosition - m_camera.GlobalPosition;
 			foreach (GameObject wall in m_walls.Children)
 			{
 				if (!wall.IsVisible) continue;
 
-				Point wallGlobalPosition = wallsGlobalPosition + wall.Position + m_cameraPosition;
+				Point wallGlobalPosition = wallsGlobalPosition + wall.Position;
 				if (m_wallsScreen.IsPositionOnScreen(wallGlobalPosition))
 				{
 					m_wallsScreen.SetSymbol(wallGlobalPosition, wall.Symbol);
@@ -362,7 +340,7 @@ public class Game : Node2D
 			m_playerScreen.Clear();
 			if (m_player.IsVisible)
 			{
-				Point playerGlobalPosition = m_player.GlobalPosition + m_cameraPosition;
+				Point playerGlobalPosition = m_player.GlobalPosition - m_camera.GlobalPosition;
 				if (m_playerScreen.IsPositionOnScreen(playerGlobalPosition))
 				{
 					m_playerScreen.SetSymbol(playerGlobalPosition, m_player.Symbol);
@@ -579,7 +557,7 @@ public class Game : Node2D
 
 		m_uiScreen.DrawText(1, 1, Screen.EDirection.Right, $"Player HP: {m_player.Health}/{m_player.MaxHealth}");
 		m_uiScreen.DrawText(1, 2, Screen.EDirection.Right, $"Player position: x={m_player.Position.X} y={m_player.Position.Y} gx={m_player.GlobalPosition.X} gy={m_player.GlobalPosition.Y}");
-		m_uiScreen.DrawText(1, 3, Screen.EDirection.Right, $"Camera position: x={m_cameraPosition.X} y={m_cameraPosition.Y} w={m_cameraWidth} h={m_cameraHeight}");
+		m_uiScreen.DrawText(1, 3, Screen.EDirection.Right, $"Camera position: x={m_camera.Position.X} y={m_camera.Position.Y} w={m_camera.Width} h={m_camera.Height}");
 		m_uiScreen.DrawText(1, 4, Screen.EDirection.Right, $"Floors position: x={m_floors.Position.X} y={m_floors.Position.Y} gx={m_floors.GlobalPosition.X} gy={m_floors.GlobalPosition.Y}");
 		m_uiScreen.DrawText(1, 5, Screen.EDirection.Right, $"Walls position: x={m_walls.Position.X} y={m_walls.Position.Y} gx={m_walls.GlobalPosition.X} gy={m_walls.GlobalPosition.Y}");
 		m_uiScreen.DrawText(1, 6, Screen.EDirection.Right, $"UI position: x={m_uiScreen.Position.X} y={m_uiScreen.Position.Y} gx={m_uiScreen.GlobalPosition.X} gy={m_uiScreen.GlobalPosition.Y}");

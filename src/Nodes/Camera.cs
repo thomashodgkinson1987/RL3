@@ -45,5 +45,18 @@ public class Camera : Node2D
 
 	#endregion // Constructors
 
+
+
+	#region Public methods
+
+	public void CenterOnPosition(Point position)
+	{
+		int x = position.X - (int)(Width / 2f);
+		int y = position.Y - (int)(Height / 2f);
+		SetPosition(x, y);
+	}
+
+	#endregion // Public methods
+
 }
 
