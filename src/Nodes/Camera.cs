@@ -6,22 +6,7 @@ public class Camera : Node2D
 	public int Width { get; set; }
 	public int Height { get; set; }
 
-	public Point Center
-	{
-		get
-		{
-			return new Point(Position.X + (int)(Width / 2f), Position.Y + (int)(Height / 2f));
-		}
-	}
-
-	public Point GlobalCenter
-	{
-		get
-		{
-			Point globalPosition = GlobalPosition;
-			return new Point(globalPosition.X + (int)(Width / 2f), globalPosition.Y + (int)(Height / 2f));
-		}
-	}
+	public Bounds Bounds { get; set; }
 
 	#endregion // Properties
 
@@ -33,6 +18,8 @@ public class Camera : Node2D
 	{
 		Width = width;
 		Height = height;
+
+		Bounds = new Bounds(x, y, x + width - 1, y + height - 1);
 	}
 
 	public Camera(string name, int width, int height) : this(name, 0, 0, width, height) { }
@@ -54,6 +41,20 @@ public class Camera : Node2D
 		int x = position.X - (int)(Width / 2f);
 		int y = position.Y - (int)(Height / 2f);
 		SetPosition(x, y);
+	}
+	public void CenterOnPosition(int x, int y)
+	{
+		CenterOnPosition(new Point(x, y));
+	}
+
+	public void CenterOnPositionX(int x)
+	{
+		SetPositionX(x - (int)(Width / 2f));
+	}
+
+	public void CenterOnPositionY(int y)
+	{
+		SetPositionY(y - (int)(Height / 2f));
 	}
 
 	#endregion // Public methods

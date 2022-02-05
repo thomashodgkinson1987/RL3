@@ -3,10 +3,11 @@ public class Game : Node2D
 
 	#region Nodes
 
-	private Node2D node_world = new Node2D();
+	private Map node_map = new Map();
 
 	private Node2D node_floors = new Node2D();
 	private Node2D node_walls = new Node2D();
+
 	private Player node_player = new Player();
 
 	private ScreenGroup node_screens = new ScreenGroup();
@@ -32,11 +33,6 @@ public class Game : Node2D
 	#region Fields
 
 	private Random m_rng;
-
-	private int m_boundsLeft;
-	private int m_boundsRight;
-	private int m_boundsUp;
-	private int m_boundsDown;
 
 	#endregion // Fields
 
@@ -65,11 +61,12 @@ public class Game : Node2D
 	{
 		base.Init();
 
-		node_world = RootNode.GetNode<Node2D>("World");
+		node_map = RootNode.GetNode<Map>("Map");
 
-		node_floors = node_world.GetNode<Node2D>("Floors");
-		node_walls = node_world.GetNode<Node2D>("Walls");
-		node_player = node_world.GetNode<Player>("Player");
+		node_floors = node_map.GetNode<Node2D>("Floors");
+		node_walls = node_map.GetNode<Node2D>("Walls");
+
+		node_player = RootNode.GetNode<Player>("Player");
 
 		node_screens = RootNode.GetNode<ScreenGroup>("Screens");
 
@@ -87,10 +84,13 @@ public class Game : Node2D
 
 		node_camera = RootNode.GetNode<Camera>("Camera");
 
-		m_boundsLeft = node_playerScreen.Position.X;
-		m_boundsRight = node_playerScreen.Position.X + node_playerScreen.Width - 1;
-		m_boundsUp = node_playerScreen.Position.Y;
-		m_boundsDown = node_playerScreen.Position.Y + node_playerScreen.Height - 1;
+		node_map.GameObjectAdded += delegate (object? sender, GameObjectAddedEventArgs args)
+		{
+		};
+
+		node_map.GameObjectRemoved += delegate (object? sender, GameObjectRemovedEventArgs args)
+		{
+		};
 
 		node_player.HealthChanged += delegate (object? sender, IntChangedEventArgs args)
 		{
@@ -122,10 +122,17 @@ public class Game : Node2D
 			node_screen.IsDirty = true;
 			node_floorsScreen.IsDirty = true;
 
-			m_boundsLeft = args.Node.Position.X < m_boundsLeft ? args.Node.Position.X : m_boundsLeft;
-			m_boundsRight = args.Node.Position.X > m_boundsRight ? args.Node.Position.X : m_boundsRight;
-			m_boundsUp = args.Node.Position.Y < m_boundsUp ? args.Node.Position.Y : m_boundsUp;
-			m_boundsDown = args.Node.Position.Y > m_boundsDown ? args.Node.Position.Y : m_boundsDown;
+			int x = args.Node.Position.X;
+			int y = args.Node.Position.Y;
+
+			Bounds bounds = node_camera.Bounds;
+
+			bounds.Left = x < bounds.Left ? x : bounds.Left;
+			bounds.Right = x > bounds.Right ? x : bounds.Right;
+			bounds.Up = y < bounds.Up ? y : bounds.Up;
+			bounds.Down = y > bounds.Down ? y : bounds.Down;
+
+			node_camera.Bounds = bounds;
 		};
 
 		node_floors.NodeRemoved += delegate (object? sender, NodeRemovedEventArgs args)
@@ -161,26 +168,32 @@ public class Game : Node2D
 			node_uiScreen.IsDirty = true;
 		};
 
-		for (int i = -node_floorsScreen.Height; i < node_floorsScreen.Height * 2; i++)
+		for (int i = 0; i < node_map.Height; i++)
 		{
-			for (int j = -node_floorsScreen.Width; j < node_floorsScreen.Width * 2; j++)
+			for (int j = 0; j < node_map.Width; j++)
 			{
 				if (m_rng.Next(0, 100) < 95)
 				{
-					AddFloor(j, i);
+					node_map.AddFloor(j, i);
 				}
 			}
 		}
 
-		for (int i = -node_wallsScreen.Height; i < node_wallsScreen.Height * 2; i++)
+		for (int i = 0; i < node_map.Height; i++)
 		{
-			for (int j = -node_wallsScreen.Width; j < node_wallsScreen.Width * 2; j++)
+			for (int j = 0; j < node_map.Width; j++)
 			{
-				if (m_rng.Next(0, 100) < 10) AddWall(j, i);
+				if (!node_map.Floors.Any(_ => _.Position.X == j && _.Position.Y == i)) continue;
+
+				if (m_rng.Next(0, 100) < 10)
+				{
+					node_map.AddWall(j, i);
+				}
 			}
 		}
 
 		Console.Clear();
+		TickCamera();
 		Draw();
 	}
 
@@ -266,18 +279,6 @@ public class Game : Node2D
 
 		Console.SetCursorPosition(0, 0);
 		Console.Write(node_screen.ToString());
-	}
-
-	public void AddFloor(int x, int y)
-	{
-		GameObject floor = new GameObject("Floor", x, y, '.');
-		node_floors.AddChild(floor);
-	}
-
-	public void AddWall(int x, int y)
-	{
-		GameObject wall = new GameObject("Wall", x, y, '#');
-		node_walls.AddChild(wall);
 	}
 
 	public bool IsClear(Point position)
@@ -366,30 +367,41 @@ public class Game : Node2D
 	{
 		node_camera.CenterOnPosition(node_player.GlobalPosition);
 
-		int x = node_camera.Position.X;
-		int y = node_camera.Position.Y;
-		int w = node_camera.Width - 1;
-		int h = node_camera.Height - 1;
+		Bounds bounds = new Bounds(0, node_map.Width, 0, node_map.Height);
 
-		if (x < m_boundsLeft)
-		{
-			x = m_boundsLeft;
-		}
-		else if (x + w > m_boundsRight)
-		{
-			x = m_boundsRight - w;
-		}
+		node_camera.Bounds = bounds;
 
-		if (y < m_boundsUp)
+		if (node_camera.Width < node_map.Width)
 		{
-			y = m_boundsUp;
+			if (node_camera.Position.X < node_camera.Bounds.Left)
+			{
+				node_camera.SetPositionX(node_camera.Bounds.Left);
+			}
+			else if (node_camera.Position.X + node_camera.Width > node_camera.Bounds.Right)
+			{
+				node_camera.SetPositionX(node_camera.Bounds.Right - node_camera.Width);
+			}
 		}
-		else if (y + h > m_boundsDown)
+		else
 		{
-			y = m_boundsDown - h;
+			node_camera.CenterOnPositionX((int)(node_map.Width / 2f));
 		}
 
-		node_camera.SetPosition(x, y);
+		if (node_camera.Height < node_map.Height)
+		{
+			if (node_camera.Position.Y < node_camera.Bounds.Up)
+			{
+				node_camera.SetPositionY(node_camera.Bounds.Up);
+			}
+			else if (node_camera.Position.Y + node_camera.Height > node_camera.Bounds.Down)
+			{
+				node_camera.SetPositionY(node_camera.Bounds.Down - node_camera.Height);
+			}
+		}
+		else
+		{
+			node_camera.CenterOnPositionY((int)(node_map.Height / 2f));
+		}
 	}
 
 	private void UpdateUI()
@@ -407,6 +419,7 @@ public class Game : Node2D
 
 		node_uiScreen.DrawText(1, 1, Screen.EDirection.Right, $"Player position: x={node_player.Position.X} y={node_player.Position.Y} gx={node_player.GlobalPosition.X} gy={node_player.GlobalPosition.Y}");
 		node_uiScreen.DrawText(1, 2, Screen.EDirection.Right, $"Camera position: x={node_camera.Position.X} y={node_camera.Position.Y} w={node_camera.Width} h={node_camera.Height}");
+		node_uiScreen.DrawText(1, 3, Screen.EDirection.Right, $"Map: width={node_map.Width} height={node_map.Height}");
 	}
 
 	#endregion // Private methods

@@ -35,21 +35,20 @@ class Program
 		//
 
 		Node2D rootNode = new Node2D("RootNode");
+
 		rootNode.RootNode.Init();
 
 		//
 
-		Node2D world = new Node2D("World");
+		Map map = new Map("Map");
 
-		Node2D floors = new Node2D("Floors");
-		Node2D walls = new Node2D("Walls");
+		rootNode.AddChild(map);
+
+		//
+
 		Player player = new Player("Player", playerX, playerY, 10);
 
-		world.AddChild(floors);
-		world.AddChild(walls);
-		world.AddChild(player);
-
-		rootNode.AddChild(world);
+		rootNode.AddChild(player);
 
 		//
 
@@ -106,7 +105,7 @@ class Program
 
 		//
 
-		Camera camera = new Camera("Camera", playerScreen.Position.X, playerScreen.Position.Y, playerScreen.Width, playerScreen.Height);
+		Camera camera = new Camera("Camera", gameWindowX, gameWindowY, gameWindowW, gameWindowH);
 
 		rootNode.AddChild(camera);
 
