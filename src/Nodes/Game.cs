@@ -5,9 +5,6 @@ public class Game : Node2D
 
 	private Map node_map = new Map();
 
-	private Node2D node_floors = new Node2D();
-	private Node2D node_walls = new Node2D();
-
 	private Player node_player = new Player();
 
 	private ScreenGroup node_screens = new ScreenGroup();
@@ -32,7 +29,7 @@ public class Game : Node2D
 
 	#region Fields
 
-	private Random m_rng;
+	private readonly Random m_rng;
 
 	#endregion // Fields
 
@@ -63,9 +60,6 @@ public class Game : Node2D
 
 		node_map = RootNode.GetNode<Map>("Map");
 
-		node_floors = node_map.GetNode<Node2D>("Floors");
-		node_walls = node_map.GetNode<Node2D>("Walls");
-
 		node_player = RootNode.GetNode<Player>("Player");
 
 		node_screens = RootNode.GetNode<ScreenGroup>("Screens");
@@ -83,14 +77,6 @@ public class Game : Node2D
 		node_uiScreen = node_uiScreens.GetNode<Screen>("UIScreen");
 
 		node_camera = RootNode.GetNode<Camera>("Camera");
-
-		node_map.GameObjectAdded += delegate (object? sender, GameObjectAddedEventArgs args)
-		{
-		};
-
-		node_map.GameObjectRemoved += delegate (object? sender, GameObjectRemovedEventArgs args)
-		{
-		};
 
 		node_player.HealthChanged += delegate (object? sender, IntChangedEventArgs args)
 		{
@@ -111,49 +97,25 @@ public class Game : Node2D
 			node_uiScreen.IsDirty = true;
 		};
 
-		node_floors.PositionChanged += delegate (object? sender, PointChangedEventArgs args)
+		node_map.FloorAdded += delegate (object? sender, GameObjectAddedEventArgs args)
 		{
 			node_screen.IsDirty = true;
 			node_floorsScreen.IsDirty = true;
 		};
 
-		node_floors.NodeAdded += delegate (object? sender, NodeAddedEventArgs args)
-		{
-			node_screen.IsDirty = true;
-			node_floorsScreen.IsDirty = true;
-
-			int x = args.Node.Position.X;
-			int y = args.Node.Position.Y;
-
-			Bounds bounds = node_camera.Bounds;
-
-			bounds.Left = x < bounds.Left ? x : bounds.Left;
-			bounds.Right = x > bounds.Right ? x : bounds.Right;
-			bounds.Up = y < bounds.Up ? y : bounds.Up;
-			bounds.Down = y > bounds.Down ? y : bounds.Down;
-
-			node_camera.Bounds = bounds;
-		};
-
-		node_floors.NodeRemoved += delegate (object? sender, NodeRemovedEventArgs args)
+		node_map.FloorRemoved += delegate (object? sender, GameObjectRemovedEventArgs arg)
 		{
 			node_screen.IsDirty = true;
 			node_floorsScreen.IsDirty = true;
 		};
 
-		node_walls.PositionChanged += delegate (object? sender, PointChangedEventArgs args)
+		node_map.WallAdded += delegate (object? sender, GameObjectAddedEventArgs args)
 		{
 			node_screen.IsDirty = true;
 			node_wallsScreen.IsDirty = true;
 		};
 
-		node_walls.NodeAdded += delegate (object? sender, NodeAddedEventArgs args)
-		{
-			node_screen.IsDirty = true;
-			node_wallsScreen.IsDirty = true;
-		};
-
-		node_walls.NodeRemoved += delegate (object? sender, NodeRemovedEventArgs args)
+		node_map.WallRemoved += delegate (object? sender, GameObjectRemovedEventArgs args)
 		{
 			node_screen.IsDirty = true;
 			node_wallsScreen.IsDirty = true;
@@ -221,8 +183,8 @@ public class Game : Node2D
 		{
 			node_floorsScreen.IsDirty = false;
 			node_floorsScreen.Clear();
-			Point floorsGlobalPosition = node_floors.GlobalPosition - node_camera.GlobalPosition;
-			foreach (GameObject floor in node_floors.Children)
+			Point floorsGlobalPosition = node_map.GlobalPosition - node_camera.GlobalPosition;
+			foreach (GameObject floor in node_map.Floors)
 			{
 				if (!floor.IsVisible) continue;
 
@@ -238,8 +200,8 @@ public class Game : Node2D
 		{
 			node_wallsScreen.IsDirty = false;
 			node_wallsScreen.Clear();
-			Point wallsGlobalPosition = node_walls.GlobalPosition - node_camera.GlobalPosition;
-			foreach (GameObject wall in node_walls.Children)
+			Point wallsGlobalPosition = node_map.GlobalPosition - node_camera.GlobalPosition;
+			foreach (GameObject wall in node_map.Walls)
 			{
 				if (!wall.IsVisible) continue;
 
@@ -283,11 +245,11 @@ public class Game : Node2D
 
 	public bool IsClear(Point position)
 	{
-		Point floorsGlobalPosition = node_floors.GlobalPosition;
+		Point floorsGlobalPosition = node_map.GlobalPosition;
 		List<Node2D> floors = new List<Node2D>();
-		for (int i = 0; i < node_floors.Children.Count; i++)
+		for (int i = 0; i < node_map.Floors.Count; i++)
 		{
-			Node2D floor = node_floors.Children[i];
+			GameObject floor = node_map.Floors[i];
 
 			Point floorGlobalPosition = floor.Position + floorsGlobalPosition;
 
@@ -298,11 +260,11 @@ public class Game : Node2D
 		}
 		bool isFloor = floors.Count > 0;
 
-		Point wallsGlobalPosition = node_walls.GlobalPosition;
+		Point wallsGlobalPosition = node_map.GlobalPosition;
 		List<Node2D> walls = new List<Node2D>();
-		for (int i = 0; i < node_walls.Children.Count; i++)
+		for (int i = 0; i < node_map.Walls.Count; i++)
 		{
-			Node2D wall = node_walls.Children[i];
+			Node2D wall = node_map.Walls[i];
 
 			Point wallGlobalPosition = wall.Position + wallsGlobalPosition;
 
