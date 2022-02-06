@@ -3,19 +3,14 @@ public class MapGroup : Node2D
 
 	#region Properties
 
-	public Dictionary<(int x, int y), Map> Maps { get; private set; }
-
 	public List<Map> AllMaps { get; private set; }
 	public List<Map> ActiveMaps { get; private set; }
-	public List<Map> InactiveMaps { get; private set; }
 
 	public List<GameObject> AllFloors { get; private set; }
 	public List<GameObject> ActiveFloors { get; private set; }
-	public List<GameObject> InactiveFloors { get; private set; }
 
 	public List<GameObject> AllWalls { get; private set; }
 	public List<GameObject> ActiveWalls { get; private set; }
-	public List<GameObject> InactiveWalls { get; private set; }
 
 	private int _mapLoadDistance;
 	public int MapLoadDistance
@@ -42,9 +37,20 @@ public class MapGroup : Node2D
 	public event EventHandler<MapAddedEventArgs>? MapAdded;
 	public event EventHandler<MapRemovedEventArgs>? MapRemoved;
 
+	public event EventHandler<MapLoadedEventArgs>? MapLoaded;
+	public event EventHandler<MapUnloadedEventArgs>? MapUnloaded;
+
 	public event EventHandler<IntChangedEventArgs>? MapLoadDistanceChanged;
 
 	#endregion // Events
+
+
+
+	#region Fields
+
+	private readonly Dictionary<(int x, int y), Map> m_maps;
+
+	#endregion // Fields
 
 
 
@@ -52,19 +58,16 @@ public class MapGroup : Node2D
 
 	public MapGroup(string name, int x, int y) : base(name, x, y)
 	{
-		Maps = new Dictionary<(int x, int y), Map>();
+		m_maps = new Dictionary<(int x, int y), Map>();
 
 		AllMaps = new List<Map>();
 		ActiveMaps = new List<Map>();
-		InactiveMaps = new List<Map>();
 
 		AllFloors = new List<GameObject>();
 		ActiveFloors = new List<GameObject>();
-		InactiveFloors = new List<GameObject>();
 
 		AllWalls = new List<GameObject>();
 		ActiveWalls = new List<GameObject>();
-		InactiveWalls = new List<GameObject>();
 
 		_mapLoadDistance = 2;
 	}
@@ -80,6 +83,33 @@ public class MapGroup : Node2D
 
 
 	#region Public methods
+
+	public bool IsMapAtPosition(Point position)
+	{
+		return m_maps.ContainsKey((position.X, position.Y));
+	}
+
+	public bool IsMapAtPosition(int x, int y)
+	{
+		return IsMapAtPosition(new Point(x, y));
+	}
+
+	public bool IsMapLoaded(Point position)
+	{
+		Map map = GetMap(position);
+		return ActiveMaps.Contains(map);
+	}
+
+	public bool IsMapLoaded(int x, int y)
+	{
+		return IsMapLoaded(new Point(x, y));
+	}
+
+	public bool IsMapLoaded(Map map)
+	{
+		Point position = GetMapPosition(map);
+		return IsMapLoaded(position);
+	}
 
 	public Map CreateMap(Point position)
 	{
@@ -101,7 +131,7 @@ public class MapGroup : Node2D
 
 	public Map GetMap(Point position)
 	{
-		return Maps[(position.X, position.Y)];
+		return m_maps[(position.X, position.Y)];
 	}
 
 	public Map GetMap(int x, int y)
@@ -113,7 +143,7 @@ public class MapGroup : Node2D
 	{
 		(int x, int y) position = (0, 0);
 
-		foreach(KeyValuePair<(int x, int y), Map> kvp in Maps)
+		foreach (KeyValuePair<(int x, int y), Map> kvp in m_maps)
 		{
 			if (kvp.Value == map)
 			{
@@ -127,20 +157,21 @@ public class MapGroup : Node2D
 
 	public void AddMap(Point position, Map map)
 	{
-		Maps.Add((position.X, position.Y), map);
+		int x = map.Width * position.X;
+		int y = map.Height * position.Y;
+		map.SetPosition(x, y);
+
+		m_maps.Add((position.X, position.Y), map);
 
 		AllMaps.Add(map);
-		InactiveMaps.Add(map);
 
-		foreach(GameObject floor in map.Floors)
+		foreach (GameObject floor in map.Floors)
 		{
 			AllFloors.Add(floor);
-			InactiveFloors.Add(floor);
 		}
-		foreach(GameObject wall in map.Walls)
+		foreach (GameObject wall in map.Walls)
 		{
 			AllWalls.Add(wall);
-			InactiveWalls.Add(wall);
 		}
 
 		AddChild(map);
@@ -157,26 +188,22 @@ public class MapGroup : Node2D
 
 	public void RemoveMap(Map map)
 	{
-		foreach(GameObject floor in map.Floors)
+		UnloadMap(map);
+
+		foreach (GameObject floor in map.Floors)
 		{
 			AllFloors.Remove(floor);
-			InactiveFloors.Remove(floor);
-			ActiveFloors.Remove(floor);
 		}
 
-		foreach(GameObject wall in map.Walls)
+		foreach (GameObject wall in map.Walls)
 		{
 			AllWalls.Remove(wall);
-			InactiveWalls.Remove(wall);
-			ActiveWalls.Remove(wall);
 		}
 
 		AllMaps.Remove(map);
-		InactiveMaps.Remove(map);
-		ActiveMaps.Remove(map);
 
 		Point position = GetMapPosition(map);
-		Maps.Remove((position.X, position.Y));
+		m_maps.Remove((position.X, position.Y));
 
 		RemoveChild(map);
 
@@ -200,19 +227,20 @@ public class MapGroup : Node2D
 	public void LoadMap(Map map)
 	{
 		ActiveMaps.Add(map);
-		InactiveMaps.Remove(map);
 
-		foreach(GameObject floor in map.Floors)
+		foreach (GameObject floor in map.Floors)
 		{
 			ActiveFloors.Add(floor);
-			InactiveFloors.Remove(floor);
 		}
 
-		foreach(GameObject wall in map.Walls)
+		foreach (GameObject wall in map.Walls)
 		{
 			ActiveWalls.Add(wall);
-			InactiveWalls.Remove(wall);
 		}
+
+		MapLoadedEventArgs args = new MapLoadedEventArgs();
+		args.Map = map;
+		OnMapLoaded(args);
 	}
 
 	public void LoadMap(Point position)
@@ -230,22 +258,20 @@ public class MapGroup : Node2D
 	public void UnloadMap(Map map)
 	{
 		ActiveMaps.Remove(map);
-		InactiveMaps.Add(map);
 
-		foreach(GameObject floor in map.Floors)
+		foreach (GameObject floor in map.Floors)
 		{
 			ActiveFloors.Remove(floor);
-			InactiveFloors.Add(floor);
 		}
 
-		foreach(GameObject wall in map.Walls)
+		foreach (GameObject wall in map.Walls)
 		{
 			ActiveWalls.Remove(wall);
-			InactiveWalls.Add(wall);
 		}
 
-		InactiveFloors.Clear();
-		InactiveWalls.Clear();
+		MapUnloadedEventArgs args = new MapUnloadedEventArgs();
+		args.Map = map;
+		OnMapUnloaded(args);
 	}
 
 	public void UnloadMap(Point position)
@@ -275,6 +301,18 @@ public class MapGroup : Node2D
 	protected virtual void OnMapRemoved(MapRemovedEventArgs e)
 	{
 		EventHandler<MapRemovedEventArgs>? handler = MapRemoved;
+		handler?.Invoke(this, e);
+	}
+
+	protected virtual void OnMapLoaded(MapLoadedEventArgs e)
+	{
+		EventHandler<MapLoadedEventArgs>? handler = MapLoaded;
+		handler?.Invoke(this, e);
+	}
+
+	protected virtual void OnMapUnloaded(MapUnloadedEventArgs e)
+	{
+		EventHandler<MapUnloadedEventArgs>? handler = MapUnloaded;
 		handler?.Invoke(this, e);
 	}
 

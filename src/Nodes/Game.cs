@@ -5,6 +5,8 @@ public class Game : Node2D
 
 	private MapGroup node_maps = new MapGroup();
 
+	private Node2D node_actors = new Node2D();
+
 	private Player node_player = new Player();
 
 	private ScreenGroup node_screens = new ScreenGroup();
@@ -32,7 +34,7 @@ public class Game : Node2D
 	private readonly Random m_rng;
 
 	private Map m_currentMap;
-	public (int x, int y) m_currentChunk;
+	private (int x, int y) m_currentChunk;
 
 	#endregion // Fields
 
@@ -65,6 +67,8 @@ public class Game : Node2D
 
 		node_maps = RootNode.GetNode<MapGroup>("Maps");
 
+		node_actors = RootNode.GetNode<Node2D>("Actors");
+
 		node_player = RootNode.GetNode<Player>("Player");
 
 		node_screens = RootNode.GetNode<ScreenGroup>("Screens");
@@ -82,6 +86,63 @@ public class Game : Node2D
 		node_uiScreen = node_uiScreens.GetNode<Screen>("UIScreen");
 
 		node_camera = RootNode.GetNode<Camera>("Camera");
+
+		node_maps.MapAdded += delegate (object? sender, MapAddedEventArgs args)
+		{
+			args.Map.FloorAdded += delegate (object? sender, GameObjectAddedEventArgs args1)
+			{
+				node_screen.IsDirty = true;
+				node_floorsScreen.IsDirty = true;
+			};
+
+			args.Map.FloorRemoved += delegate (object? sender, GameObjectRemovedEventArgs args1)
+			{
+				node_screen.IsDirty = true;
+				node_floorsScreen.IsDirty = true;
+			};
+
+			args.Map.WallAdded += delegate (object? sender, GameObjectAddedEventArgs args1)
+			{
+				node_screen.IsDirty = true;
+				node_wallsScreen.IsDirty = true;
+			};
+
+			args.Map.WallRemoved += delegate (object? sender, GameObjectRemovedEventArgs args1)
+			{
+				node_screen.IsDirty = true;
+				node_wallsScreen.IsDirty = true;
+			};
+
+			int left = args.Map.Position.X;
+			int right = args.Map.Position.X + args.Map.Width;
+			int up = args.Map.Position.Y;
+			int down = args.Map.Position.Y + args.Map.Height;
+
+			node_camera.ExpandBoundsTo(left, right, up, down);
+		};
+
+		node_maps.MapRemoved += delegate (object? sender, MapRemovedEventArgs args)
+		{
+			if (args.Map.Position.X == node_camera.Bounds.Left || args.Map.Position.X + args.Map.Width - 1 == node_camera.Bounds.Right
+					|| args.Map.Position.Y == node_camera.Bounds.Up || args.Map.Position.Y + args.Map.Height - 1 == node_camera.Bounds.Down)
+			{
+				RecalculateCameraBounds();
+			}
+		};
+
+		node_maps.MapLoaded += delegate (object? sender, MapLoadedEventArgs args)
+		{
+			node_screen.IsDirty = true;
+			node_floorsScreen.IsDirty = true;
+			node_wallsScreen.IsDirty = true;
+		};
+
+		node_maps.MapUnloaded += delegate (object? sender, MapUnloadedEventArgs args)
+		{
+			node_screen.IsDirty = true;
+			node_floorsScreen.IsDirty = true;
+			node_wallsScreen.IsDirty = true;
+		};
 
 		node_player.HealthChanged += delegate (object? sender, IntChangedEventArgs args)
 		{
@@ -110,27 +171,46 @@ public class Game : Node2D
 			node_playerScreen.IsDirty = true;
 			node_uiScreen.IsDirty = true;
 		};
+	
+		List<Map> maps = new List<Map>();
+		maps.Add(StaticMaps.GetMap1());
+		maps.Add(StaticMaps.GetMap2(m_rng));
+		maps.Add(StaticMaps.GetMap3());
+		maps.Add(StaticMaps.GetMap4(m_rng));
+		maps.Add(StaticMaps.GetMap5(m_rng));
 
 		for (int i = -8; i < 8; i++)
 		{
-			for(int j = -8; j < 8; j++)
+			for (int j = -8; j < 8; j++)
 			{
-				Map map = node_maps.CreateMap(j, i);
-				for(int k = 0; k < map.Height; k++)
+				Map map = new Map();
+
+				int c = m_rng.Next(0, 5);
+
+				if (c == 0) map = StaticMaps.GetMap1();
+				else if (c == 1) map = StaticMaps.GetMap2(m_rng);
+				else if (c == 2) map = StaticMaps.GetMap3();
+				else if (c == 3) map = StaticMaps.GetMap4(m_rng);
+				else if (c == 4) map = StaticMaps.GetMap5(m_rng);
+
+				for (int k = 0; k < m_rng.Next(0, 2); k++)
 				{
-					for(int l = 0; l < map.Width; l++)
-					{
-						map.AddFloor(l, k);
-						if (m_rng.Next(0, 500) < 2)
-						{
-							map.AddWall(l, k);
-						}
-					}
+					char[] symbols = { 'A', 'B', '%', '&', '$', '£', 'P', 'M' };
+
+					int x = m_rng.Next(0, 15) * j;
+					int y = m_rng.Next(0, 15) * i;
+					char symbol = symbols[m_rng.Next(0, 8)];
+					NPC npc = new NPC("NPC", x, y, symbol, m_rng);
+					npc.IsFollowPlayer = m_rng.Next(0, 2) == 0;
+					npc.ChanceToDoRandomMove = m_rng.Next(0, 75);
+					node_actors.AddChild(npc);
 				}
+
+				node_maps.AddMap(j, i, map);
 			}
 		}
 
-		m_currentMap = node_maps.Maps[(0, 0)];
+		m_currentMap = node_maps.GetMap(0, 0);
 		m_currentChunk = (0, 0);
 
 		for(int i = -node_maps.MapLoadDistance; i <= node_maps.MapLoadDistance; i++)
@@ -154,51 +234,19 @@ public class Game : Node2D
 
 	public void Tick(ConsoleKeyInfo consoleKeyInfo)
 	{
-		node_player.Tick(consoleKeyInfo, this);
+		foreach(NPC npc in node_actors.Children)
+		{
+			npc.Tick(this);
+		}
 
-		int oldChunkX = m_currentChunk.x;
-		int oldChunkY = m_currentChunk.y;
+		node_player.Tick(consoleKeyInfo, this);
 
 		int newChunkX = (int)MathF.Floor(node_player.GlobalPosition.X / 16f);
 		int newChunkY = (int)MathF.Floor(node_player.GlobalPosition.Y / 16f);
 
 		if (newChunkX != m_currentChunk.x || newChunkY != m_currentChunk.y)
 		{
-			node_screen.IsDirty = true;
-			node_floorsScreen.IsDirty = true;
-			node_wallsScreen.IsDirty = true;
-
-			m_currentChunk = (newChunkX, newChunkY);
-			m_currentMap = node_maps.GetMap(m_currentChunk.x, m_currentChunk.y);
-
-			List<Map> newMaps = new List<Map>();
-
-			for(int i = -node_maps.MapLoadDistance; i <= node_maps.MapLoadDistance; i++)
-			{
-				for(int j = -node_maps.MapLoadDistance; j <= node_maps.MapLoadDistance; j++)
-				{
-					int x = m_currentChunk.x + j;
-					int y = m_currentChunk.y + i;
-					if (node_maps.Maps.ContainsKey((x, y)))
-					{
-						Map map = node_maps.GetMap(x, y);
-						newMaps.Add(map);
-						if (node_maps.InactiveMaps.Contains(map))
-						{
-							node_maps.LoadMap(map);
-						}
-					}
-				}
-			}
-
-			for (int i = 0; i < node_maps.ActiveMaps.Count; i++)
-			{
-				if (!newMaps.Contains(node_maps.ActiveMaps[i]))
-				{
-					node_maps.UnloadMap(node_maps.ActiveMaps[i]);
-					i--;
-				}
-			}
+			UpdateLoadedMaps(newChunkX, newChunkY);
 		}
 
 		TickCamera();
@@ -212,41 +260,52 @@ public class Game : Node2D
 			node_screen.Clear();
 		}
 
-		if (node_floorsScreen.IsDirty)
+		if (node_floorsScreen.IsDirty && node_wallsScreen.IsDirty)
 		{
-			node_floorsScreen.IsDirty = false;
-			node_floorsScreen.Clear();
+			bool wasFloorsScreenDirty = node_floorsScreen.IsDirty;
+			bool wasWallsScreenDirty = node_wallsScreen.IsDirty;
+
+			if (node_floorsScreen.IsDirty)
+			{
+				node_floorsScreen.IsDirty = false;
+				node_floorsScreen.Clear();
+			}
+
+			if (node_wallsScreen.IsDirty)
+			{
+				node_wallsScreen.IsDirty = false;
+				node_wallsScreen.Clear();
+			}
+
 			foreach(Map map in node_maps.ActiveMaps)
 			{
 				Point globalPosition = map.GlobalPosition - node_camera.GlobalPosition;
-				foreach (GameObject floor in map.Floors)
-				{
-					if (!floor.IsVisible) continue;
 
-					Point floorGlobalPosition = globalPosition + floor.Position;
-					if (node_floorsScreen.IsPositionOnScreen(floorGlobalPosition))
+				if (wasFloorsScreenDirty)
+				{
+					foreach (GameObject floor in map.Floors)
 					{
-						node_floorsScreen.SetSymbol(floorGlobalPosition, floor.Symbol);
+						if (!floor.IsVisible) continue;
+
+						Point floorGlobalPosition = globalPosition + floor.Position;
+						if (node_floorsScreen.IsPositionOnScreen(floorGlobalPosition))
+						{
+							node_floorsScreen.SetSymbol(floorGlobalPosition, floor.Symbol);
+						}
 					}
 				}
-			}
-		}
 
-		if (node_wallsScreen.IsDirty)
-		{
-			node_wallsScreen.IsDirty = false;
-			node_wallsScreen.Clear();
-			foreach(Map map in node_maps.ActiveMaps)
-			{
-				Point globalPosition = map.GlobalPosition - node_camera.GlobalPosition;
-				foreach (GameObject wall in map.Walls)
+				if (wasWallsScreenDirty)
 				{
-					if (!wall.IsVisible) continue;
-
-					Point wallGlobalPosition = globalPosition + wall.Position;
-					if (node_wallsScreen.IsPositionOnScreen(wallGlobalPosition))
+					foreach (GameObject wall in map.Walls)
 					{
-						node_wallsScreen.SetSymbol(wallGlobalPosition, wall.Symbol);
+						if (!wall.IsVisible) continue;
+
+						Point wallGlobalPosition = globalPosition + wall.Position;
+						if (node_wallsScreen.IsPositionOnScreen(wallGlobalPosition))
+						{
+							node_wallsScreen.SetSymbol(wallGlobalPosition, wall.Symbol);
+						}
 					}
 				}
 			}
@@ -256,6 +315,14 @@ public class Game : Node2D
 		{
 			node_playerScreen.IsDirty = false;
 			node_playerScreen.Clear();
+			foreach(NPC npc in node_actors.Children)
+			{
+				Point npcGlobalPosition = npc.GlobalPosition - node_camera.GlobalPosition;
+				if (node_playerScreen.IsPositionOnScreen(npcGlobalPosition))
+				{
+					node_playerScreen.SetSymbol(npcGlobalPosition, npc.Symbol);
+				}
+			}
 			if (node_player.IsVisible)
 			{
 				Point playerGlobalPosition = node_player.GlobalPosition - node_camera.GlobalPosition;
@@ -325,6 +392,46 @@ public class Game : Node2D
 
 	#region Private methods
 
+	private void UpdateLoadedMaps(int chunkX, int chunkY)
+	{
+		node_screen.IsDirty = true;
+		node_floorsScreen.IsDirty = true;
+		node_wallsScreen.IsDirty = true;
+
+		m_currentChunk = (chunkX, chunkY);
+		m_currentMap = node_maps.GetMap(m_currentChunk.x, m_currentChunk.y);
+
+		List<Map> newMaps = new List<Map>();
+
+		for (int i = -node_maps.MapLoadDistance; i <= node_maps.MapLoadDistance; i++)
+		{
+			for (int j = -node_maps.MapLoadDistance; j <= node_maps.MapLoadDistance; j++)
+			{
+				int x = m_currentChunk.x + j;
+				int y = m_currentChunk.y + i;
+				if (node_maps.IsMapAtPosition(x, y))
+				{
+					Map map = node_maps.GetMap(x, y);
+					newMaps.Add(map);
+					if (!node_maps.IsMapLoaded(map))
+					{
+						node_maps.LoadMap(map);
+					}
+				}
+			}
+		}
+
+		for (int i = 0; i < node_maps.ActiveMaps.Count; i++)
+		{
+			Map map = node_maps.ActiveMaps[i];
+			if (!newMaps.Contains(map))
+			{
+				node_maps.UnloadMap(map);
+				i--;
+			}
+		}
+	}
+
 	private void DrawScreen(Screen screen, Screen targetScreen)
 	{
 		if (!screen.IsVisible) return;
@@ -361,111 +468,20 @@ public class Game : Node2D
 		}
 	}
 
+	private void RecalculateCameraBounds()
+	{
+		int left = node_maps.AllMaps.Min(_ => _.GlobalPosition.X);
+		int right = node_maps.AllMaps.Max(_ => _.GlobalPosition.X) + m_currentMap.Width;
+		int up = node_maps.AllMaps.Min(_ => _.GlobalPosition.Y);
+		int down = node_maps.AllMaps.Max(_ => _.GlobalPosition.Y) + m_currentMap.Height;
+
+		node_camera.SetBounds(left, right, up, down);
+	}
+
 	private void TickCamera()
 	{
 		node_camera.CenterOnPosition(node_player.GlobalPosition);
-
-		int left = node_maps.ActiveMaps.Min(_ => _.GlobalPosition.X);
-		int right = node_maps.ActiveMaps.Max(_ => _.GlobalPosition.X) + m_currentMap.Width;
-		int up = node_maps.ActiveMaps.Min(_ => _.GlobalPosition.Y);
-		int down = node_maps.ActiveMaps.Max(_ => _.GlobalPosition.Y) + m_currentMap.Height;
-
-		int w = right - (int)(MathF.Abs(left));
-		int h = down - (int)(MathF.Abs(up));
-
-		if (left < 0)
-		{
-			if (right < 0)
-			{
-				w = (int)MathF.Abs(left - right);
-			}
-			else
-			{
-				w = right + (int)MathF.Abs(left);
-			}
-		}
-		else
-		{
-			w = right - left;
-		}
-
-		if (up < 0)
-		{
-			if (down < 0)
-			{
-				h = (int)MathF.Abs(up - down);
-			}
-			else
-			{
-				h = down + (int)MathF.Abs(up);
-			}
-		}
-		else
-		{
-			w = down - up;
-		}
-
-		Bounds bounds = new Bounds(left, right, up, down);
-
-		node_camera.Bounds = bounds;
-
-		if (node_camera.Width < w)
-		{
-			if (node_camera.Position.X < node_camera.Bounds.Left)
-			{
-				node_camera.SetPositionX(node_camera.Bounds.Left);
-			}
-			else if (node_camera.Position.X + node_camera.Width > node_camera.Bounds.Right)
-			{
-				node_camera.SetPositionX(node_camera.Bounds.Right - node_camera.Width);
-			}
-		}
-		else
-		{
-			int x = 0;
-			if (left < 0)
-			{
-				x = right + (int)MathF.Abs(left);
-				x = (int)(x / 2f);
-				x -= (int)MathF.Abs(left);
-			}
-			else
-			{
-				x = right - left;
-				x = (int)(x / 2f);
-				x += left;
-			}
-			node_camera.CenterOnPositionX(x);
-		}
-
-		if (node_camera.Height < h)
-		{
-			if (node_camera.Position.Y < node_camera.Bounds.Up)
-			{
-				node_camera.SetPositionY(node_camera.Bounds.Up);
-			}
-			else if (node_camera.Position.Y + node_camera.Height > node_camera.Bounds.Down)
-			{
-				node_camera.SetPositionY(node_camera.Bounds.Down - node_camera.Height);
-			}
-		}
-		else
-		{
-			int y = 0;
-			if (up < 0)
-			{
-				y = down + (int)MathF.Abs(up);
-				y = (int)(y / 2f);
-				y -= (int)MathF.Abs(up);
-			}
-			else
-			{
-				y = down - up;
-				y = (int)(y / 2f);
-				y += up;
-			}
-			node_camera.CenterOnPositionY(y);
-		}
+		node_camera.ClampToBounds();
 	}
 
 	private void UpdateUI()
@@ -481,13 +497,12 @@ public class Game : Node2D
 		node_uiScreen.SetSymbol(0, node_uiScreen.Height - 1, '└');
 		node_uiScreen.SetSymbol(node_uiScreen.Width - 1, node_uiScreen.Height - 1, '┘');
 
-		node_uiScreen.DrawText(1, 1, Screen.EDirection.Right, $"Player position: x={node_player.Position.X} y={node_player.Position.Y} gx={node_player.GlobalPosition.X} gy={node_player.GlobalPosition.Y}");
+		node_uiScreen.DrawText(1, 1, Screen.EDirection.Right, $"Player: x={node_player.Position.X} y={node_player.Position.Y} gx={node_player.GlobalPosition.X} gy={node_player.GlobalPosition.Y} cx={m_currentChunk.x} cy={m_currentChunk.y}");
 		node_uiScreen.DrawText(1, 2, Screen.EDirection.Right, $"Camera position: x={node_camera.Position.X} y={node_camera.Position.Y} gx={node_camera.GlobalPosition.X} gy={node_camera.GlobalPosition.Y} w={node_camera.Width} h={node_camera.Height}");
 		node_uiScreen.DrawText(1, 3, Screen.EDirection.Right, $"Camera bounds: left={node_camera.Bounds.Left} right={node_camera.Bounds.Right} up={node_camera.Bounds.Up} down={node_camera.Bounds.Down}");
-		node_uiScreen.DrawText(1, 4, Screen.EDirection.Right, $"Current chunk: x={m_currentChunk.x} y={m_currentChunk.y}");
-		node_uiScreen.DrawText(1, 5, Screen.EDirection.Right, $"Maps: all={node_maps.AllMaps.Count} active={node_maps.ActiveMaps.Count} inactive={node_maps.InactiveMaps.Count}");
-		node_uiScreen.DrawText(1, 6, Screen.EDirection.Right, $"Floors: all={node_maps.AllFloors.Count} active={node_maps.ActiveFloors.Count} inactive={node_maps.InactiveFloors.Count}");
-		node_uiScreen.DrawText(1, 7, Screen.EDirection.Right, $"Walls: all={node_maps.AllWalls.Count} active={node_maps.ActiveWalls.Count} inactive={node_maps.InactiveWalls.Count}");
+		node_uiScreen.DrawText(1, 4, Screen.EDirection.Right, $"Maps: all={node_maps.AllMaps.Count} active={node_maps.ActiveMaps.Count}");
+		node_uiScreen.DrawText(1, 5, Screen.EDirection.Right, $"Floors: all={node_maps.AllFloors.Count} active={node_maps.ActiveFloors.Count}");
+		node_uiScreen.DrawText(1, 6, Screen.EDirection.Right, $"Walls: all={node_maps.AllWalls.Count} active={node_maps.ActiveWalls.Count}");
 	}
 
 	#endregion // Private methods

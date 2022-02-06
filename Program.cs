@@ -46,6 +46,12 @@ class Program
 
 		//
 
+		Node2D actors = new Node2D("Actors");
+
+		rootNode.AddChild(actors);
+
+		//
+
 		Player player = new Player(playerX, playerY, 10);
 
 		rootNode.AddChild(player);
