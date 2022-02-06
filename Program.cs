@@ -40,13 +40,13 @@ class Program
 
 		//
 
-		Map map = new Map("Map");
+		MapGroup mapGroup = new MapGroup("Maps");
 
-		rootNode.AddChild(map);
+		rootNode.AddChild(mapGroup);
 
 		//
 
-		Player player = new Player("Player", playerX, playerY, 10);
+		Player player = new Player(playerX, playerY, 10);
 
 		rootNode.AddChild(player);
 
