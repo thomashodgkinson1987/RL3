@@ -66,7 +66,7 @@ public class MapGroup : Node2D
 		ActiveWalls = new List<GameObject>();
 		InactiveWalls = new List<GameObject>();
 
-		_mapLoadDistance = 1;
+		_mapLoadDistance = 2;
 	}
 
 	public MapGroup(string name) : this(name, 0, 0) { }
@@ -243,6 +243,9 @@ public class MapGroup : Node2D
 			ActiveWalls.Remove(wall);
 			InactiveWalls.Add(wall);
 		}
+
+		InactiveFloors.Clear();
+		InactiveWalls.Clear();
 	}
 
 	public void UnloadMap(Point position)

@@ -199,7 +199,6 @@ public class Game : Node2D
 					i--;
 				}
 			}
-
 		}
 
 		TickCamera();
@@ -286,37 +285,30 @@ public class Game : Node2D
 	public bool IsClear(Point position)
 	{
 		bool isFloor = false;
+		bool isWall = false;
+
 		foreach(Map map in node_maps.ActiveMaps)
 		{
 			Point globalPosition = map.GlobalPosition;
 			foreach(GameObject floor in map.Floors)
 			{
 				Point floorGlobalPosition = floor.Position + globalPosition;
-
 				if (position == floorGlobalPosition)
 				{
 					isFloor = true;
 					break;
 				}
 			}
-			if (isFloor) break;
-		}
-
-		bool isWall = false;
-		foreach(Map map in node_maps.ActiveMaps)
-		{
-			Point globalPosition = map.GlobalPosition;
 			foreach(GameObject wall in map.Walls)
 			{
 				Point wallGlobalPosition = wall.Position + globalPosition;
-
 				if (position == wallGlobalPosition)
 				{
 					isWall = true;
 					break;
 				}
-				if (isWall) break;
 			}
+			if (isFloor && isWall) break;
 		}
 
 		return isFloor && !isWall;
@@ -489,13 +481,13 @@ public class Game : Node2D
 		node_uiScreen.SetSymbol(0, node_uiScreen.Height - 1, '└');
 		node_uiScreen.SetSymbol(node_uiScreen.Width - 1, node_uiScreen.Height - 1, '┘');
 
-		int playerChunkX = (int)MathF.Floor(node_player.GlobalPosition.X / 16f);
-		int playerChunkY = (int)MathF.Floor(node_player.GlobalPosition.Y / 16f);
-
-		node_uiScreen.DrawText(1, 1, Screen.EDirection.Right, $"Player position: x={node_player.Position.X} y={node_player.Position.Y} gx={node_player.GlobalPosition.X} gy={node_player.GlobalPosition.Y} cx={playerChunkX} cy={playerChunkY}");
-		node_uiScreen.DrawText(1, 2, Screen.EDirection.Right, $"Camera position: x={node_camera.Position.X} y={node_camera.Position.Y} w={node_camera.Width} h={node_camera.Height}");
+		node_uiScreen.DrawText(1, 1, Screen.EDirection.Right, $"Player position: x={node_player.Position.X} y={node_player.Position.Y} gx={node_player.GlobalPosition.X} gy={node_player.GlobalPosition.Y}");
+		node_uiScreen.DrawText(1, 2, Screen.EDirection.Right, $"Camera position: x={node_camera.Position.X} y={node_camera.Position.Y} gx={node_camera.GlobalPosition.X} gy={node_camera.GlobalPosition.Y} w={node_camera.Width} h={node_camera.Height}");
 		node_uiScreen.DrawText(1, 3, Screen.EDirection.Right, $"Camera bounds: left={node_camera.Bounds.Left} right={node_camera.Bounds.Right} up={node_camera.Bounds.Up} down={node_camera.Bounds.Down}");
 		node_uiScreen.DrawText(1, 4, Screen.EDirection.Right, $"Current chunk: x={m_currentChunk.x} y={m_currentChunk.y}");
+		node_uiScreen.DrawText(1, 5, Screen.EDirection.Right, $"Maps: all={node_maps.AllMaps.Count} active={node_maps.ActiveMaps.Count} inactive={node_maps.InactiveMaps.Count}");
+		node_uiScreen.DrawText(1, 6, Screen.EDirection.Right, $"Floors: all={node_maps.AllFloors.Count} active={node_maps.ActiveFloors.Count} inactive={node_maps.InactiveFloors.Count}");
+		node_uiScreen.DrawText(1, 7, Screen.EDirection.Right, $"Walls: all={node_maps.AllWalls.Count} active={node_maps.ActiveWalls.Count} inactive={node_maps.InactiveWalls.Count}");
 	}
 
 	#endregion // Private methods
