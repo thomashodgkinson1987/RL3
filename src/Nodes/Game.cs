@@ -313,9 +313,9 @@ public class Game : Node2D
 		m_currentMap = node_maps.GetMap(0, 0);
 		m_currentChunk = (0, 0);
 
-		for(int i = -node_maps.MapLoadDistance; i <= node_maps.MapLoadDistance; i++)
+		for (int i = -node_maps.MapLoadDistance; i <= node_maps.MapLoadDistance; i++)
 		{
-			for(int j = -node_maps.MapLoadDistance; j <= node_maps.MapLoadDistance; j++)
+			for (int j = -node_maps.MapLoadDistance; j <= node_maps.MapLoadDistance; j++)
 			{
 				node_maps.LoadMap(j, i);
 			}
@@ -350,7 +350,7 @@ public class Game : Node2D
 			}
 		}
 
-		foreach(NPC actor in node_maps.ActiveActors)
+		foreach (NPC actor in node_maps.ActiveActors)
 		{
 			Point previousPosition = actor.Position;
 			Point previousGlobalPosition = actor.GlobalPosition;
@@ -376,38 +376,10 @@ public class Game : Node2D
 
 				previousMap.RemoveActor(actor);
 
-				if (dirX == -1 && dirY == 0)
-				{
-					actor.SetPositionX(15);
-				}
-				else if (dirX == 1 && dirY == 0)
-				{
-					actor.SetPositionX(0);
-				}
-				else if (dirX == 0 && dirY == -1)
-				{
-					actor.SetPositionY(15);
-				}
-				else if (dirX == 0 && dirY == 1)
-				{
-					actor.SetPositionY(0);
-				}
-				else if (dirX == -1 && dirY == -1)
-				{
-					actor.SetPosition(15, 15);
-				}
-				else if (dirX == 1 && dirY == -1)
-				{
-					actor.SetPosition(0, 15);
-				}
-				else if (dirX == -1 && dirY == 1)
-				{
-					actor.SetPosition(15, 0);
-				}
-				else if (dirX == 1 && dirY == 1)
-				{
-					actor.SetPosition(0, 0);
-				}
+				int _x = dirX == -1 ? 15 : dirX == 1 ? 0 : actor.Position.X;
+				int _y = dirY == -1 ? 15 : dirY == 1 ? 0 : actor.Position.Y;
+
+				actor.SetPosition(_x, _y);
 
 				newMap.AddActor(actor, actor.Position);
 			}
@@ -446,7 +418,7 @@ public class Game : Node2D
 				node_actorsScreen.Clear();
 			}
 
-			foreach(Map map in node_maps.ActiveMaps)
+			foreach (Map map in node_maps.ActiveMaps)
 			{
 				Point globalPosition = map.GlobalPosition - node_camera.GlobalPosition;
 
@@ -531,10 +503,10 @@ public class Game : Node2D
 		bool isPlayer = position == node_player.GlobalPosition;
 		bool isActor = false;
 
-		foreach(Map map in node_maps.ActiveMaps)
+		foreach (Map map in node_maps.ActiveMaps)
 		{
 			Point globalPosition = map.GlobalPosition;
-			foreach(GameObject floor in map.Floors)
+			foreach (GameObject floor in map.Floors)
 			{
 				Point floorGlobalPosition = floor.Position + globalPosition;
 				if (position == floorGlobalPosition)
@@ -543,7 +515,7 @@ public class Game : Node2D
 					break;
 				}
 			}
-			foreach(GameObject wall in map.Walls)
+			foreach (GameObject wall in map.Walls)
 			{
 				Point wallGlobalPosition = wall.Position + globalPosition;
 				if (position == wallGlobalPosition)
@@ -552,7 +524,7 @@ public class Game : Node2D
 					break;
 				}
 			}
-			foreach(NPC actor in map.Actors)
+			foreach (NPC actor in map.Actors)
 			{
 				Point actorGlobalPosition = actor.Position + globalPosition;
 				if (position == actorGlobalPosition)
@@ -598,16 +570,6 @@ public class Game : Node2D
 			{
 				chunk.x += 1;
 			}
-		}
-		for (int i = 1; i <= node_maps.MapLoadDistance; i++)
-		{
-			if (!node_maps.IsMapAtPosition(chunkX + i, chunkY))
-			{
-				chunk.x -= 1;
-			}
-		}
-		for (int i = -1; i >= -node_maps.MapLoadDistance; i--)
-		{
 			if (!node_maps.IsMapAtPosition(chunkX, chunkY + i))
 			{
 				chunk.y += 1;
@@ -615,12 +577,16 @@ public class Game : Node2D
 		}
 		for (int i = 1; i <= node_maps.MapLoadDistance; i++)
 		{
+			if (!node_maps.IsMapAtPosition(chunkX + i, chunkY))
+			{
+				chunk.x -= 1;
+			}
 			if (!node_maps.IsMapAtPosition(chunkX, chunkY + i))
 			{
 				chunk.y -= 1;
 			}
 		}
-		
+
 		List<Map> newMaps = new List<Map>();
 
 		for (int i = -node_maps.MapLoadDistance; i <= node_maps.MapLoadDistance; i++)
