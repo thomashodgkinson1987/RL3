@@ -93,9 +93,9 @@ public class Camera : Node2D
 			{
 				SetPositionX(Bounds.Left);
 			}
-			else if (Position.X + Width > Bounds.Right)
+			else if (Position.X + Width - 1 > Bounds.Right)
 			{
-				SetPositionX(Bounds.Right - Width);
+				SetPositionX(Bounds.Right - (Width - 1));
 			}
 		}
 		else
@@ -110,9 +110,9 @@ public class Camera : Node2D
 			{
 				SetPositionY(Bounds.Up);
 			}
-			else if (Position.Y + Height > Bounds.Down)
+			else if (Position.Y + Height - 1 > Bounds.Down)
 			{
-				SetPositionY(Bounds.Down - Height);
+				SetPositionY(Bounds.Down - (Height - 1));
 			}
 		}
 		else

@@ -59,7 +59,7 @@ public class StaticMaps
 
 		int[,] walls = new int[16,16]
 		{
-			{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+			{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
 			{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
 			{0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0},
 			{0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,0},
@@ -74,7 +74,7 @@ public class StaticMaps
 			{0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0},
 			{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
 			{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-			{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+			{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
 		};
 
 		FillFloors(map);
@@ -153,7 +153,7 @@ public class StaticMaps
 
 		int[,] walls = new int[16,16]
 		{
-			{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+			{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
 			{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
 			{0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0},
 			{0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0},
@@ -168,7 +168,7 @@ public class StaticMaps
 			{0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0},
 			{0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0},
 			{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-			{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+			{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
 		};
 
 		FillFloors(map);
@@ -189,7 +189,8 @@ public class StaticMaps
 			{
 				if (rng.Next(0, 100) < 5)
 				{
-					map.AddWall(j, i);
+					GameObject wall = new GameObject(j, i, '#');
+					map.AddWall(wall, wall.Position);
 				}
 			}
 		}
@@ -239,7 +240,8 @@ public class StaticMaps
 			{
 				if (floors[i,j] == 1)
 				{
-					map.AddFloor(j, i);
+					GameObject floor = new GameObject(j, i, '.');
+					map.AddFloor(floor, floor.Position);
 				}
 			}
 		}
@@ -253,7 +255,8 @@ public class StaticMaps
 			{
 				if (walls[i,j] == 1)
 				{
-					map.AddWall(j, i);
+					GameObject wall = new GameObject(j, i, '#');
+					map.AddWall(wall, wall.Position);
 				}
 			}
 		}
@@ -265,7 +268,8 @@ public class StaticMaps
 		{
 			for(int j = 0; j < map.Width; j++)
 			{
-				map.AddFloor(j, i);
+				GameObject floor = new GameObject(j, i, '.');
+				map.AddFloor(floor, floor.Position);
 			}
 		}
 	}
@@ -276,7 +280,8 @@ public class StaticMaps
 		{
 			for(int j = 0; j < map.Width; j++)
 			{
-				map.AddWall(j, i);
+				GameObject wall = new GameObject(j, i, '#');
+				map.AddWall(wall, wall.Position);
 			}
 		}
 	}

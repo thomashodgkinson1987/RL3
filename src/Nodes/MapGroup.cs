@@ -3,14 +3,17 @@ public class MapGroup : Node2D
 
 	#region Properties
 
-	public List<Map> AllMaps { get; private set; }
-	public List<Map> ActiveMaps { get; private set; }
+	public List<Map> AllMaps { get; }
+	public List<Map> ActiveMaps { get; }
 
-	public List<GameObject> AllFloors { get; private set; }
-	public List<GameObject> ActiveFloors { get; private set; }
+	public List<GameObject> AllFloors { get; }
+	public List<GameObject> ActiveFloors { get; }
 
-	public List<GameObject> AllWalls { get; private set; }
-	public List<GameObject> ActiveWalls { get; private set; }
+	public List<GameObject> AllWalls { get; }
+	public List<GameObject> ActiveWalls { get; }
+
+	public List<NPC> AllActors { get; }
+	public List<NPC> ActiveActors { get; }
 
 	private int _mapLoadDistance;
 	public int MapLoadDistance
@@ -69,6 +72,9 @@ public class MapGroup : Node2D
 		AllWalls = new List<GameObject>();
 		ActiveWalls = new List<GameObject>();
 
+		AllActors = new List<NPC>();
+		ActiveActors = new List<NPC>();
+
 		_mapLoadDistance = 2;
 	}
 
@@ -111,24 +117,6 @@ public class MapGroup : Node2D
 		return IsMapLoaded(position);
 	}
 
-	public Map CreateMap(Point position)
-	{
-		Map map = new Map();
-
-		int x = map.Width * position.X;
-		int y = map.Height * position.Y;
-		map.SetPosition(x, y);
-
-		AddMap(position, map);
-
-		return map;
-	}
-
-	public Map CreateMap(int x, int y)
-	{
-		return CreateMap(new Point(x, y));
-	}
-
 	public Map GetMap(Point position)
 	{
 		return m_maps[(position.X, position.Y)];
@@ -155,7 +143,7 @@ public class MapGroup : Node2D
 		return new Point(position.x, position.y);
 	}
 
-	public void AddMap(Point position, Map map)
+	public void AddMap(Map map, Point position)
 	{
 		int x = map.Width * position.X;
 		int y = map.Height * position.Y;
@@ -173,6 +161,10 @@ public class MapGroup : Node2D
 		{
 			AllWalls.Add(wall);
 		}
+		foreach(NPC actor in map.Actors)
+		{
+			AllActors.Add(actor);
+		}
 
 		AddChild(map);
 
@@ -181,9 +173,9 @@ public class MapGroup : Node2D
 		OnMapAdded(args);
 	}
 
-	public void AddMap(int x, int y, Map map)
+	public void AddMap(Map map, int x, int y)
 	{
-		AddMap(new Point(x, y), map);
+		AddMap(map, new Point(x, y));
 	}
 
 	public void RemoveMap(Map map)
@@ -194,10 +186,13 @@ public class MapGroup : Node2D
 		{
 			AllFloors.Remove(floor);
 		}
-
 		foreach (GameObject wall in map.Walls)
 		{
 			AllWalls.Remove(wall);
+		}
+		foreach(NPC actor in map.Actors)
+		{
+			AllActors.Remove(actor);
 		}
 
 		AllMaps.Remove(map);
@@ -220,8 +215,7 @@ public class MapGroup : Node2D
 
 	public void RemoveMap(int x, int y)
 	{
-		Map map = GetMap(x, y);
-		RemoveMap(map);
+		RemoveMap(new Point(x, y));
 	}
 
 	public void LoadMap(Map map)
@@ -232,10 +226,13 @@ public class MapGroup : Node2D
 		{
 			ActiveFloors.Add(floor);
 		}
-
 		foreach (GameObject wall in map.Walls)
 		{
 			ActiveWalls.Add(wall);
+		}
+		foreach(NPC actor in map.Actors)
+		{
+			ActiveActors.Add(actor);
 		}
 
 		MapLoadedEventArgs args = new MapLoadedEventArgs();
@@ -251,8 +248,7 @@ public class MapGroup : Node2D
 
 	public void LoadMap(int x, int y)
 	{
-		Map map = GetMap(x, y);
-		LoadMap(map);
+		LoadMap(new Point(x, y));
 	}
 
 	public void UnloadMap(Map map)
@@ -263,10 +259,13 @@ public class MapGroup : Node2D
 		{
 			ActiveFloors.Remove(floor);
 		}
-
 		foreach (GameObject wall in map.Walls)
 		{
 			ActiveWalls.Remove(wall);
+		}
+		foreach (NPC actor in map.Actors)
+		{
+			ActiveActors.Remove(actor);
 		}
 
 		MapUnloadedEventArgs args = new MapUnloadedEventArgs();
@@ -282,8 +281,7 @@ public class MapGroup : Node2D
 
 	public void UnloadMap(int x, int y)
 	{
-		Map map = GetMap(x, y);
-		UnloadMap(map);
+		UnloadMap(new Point(x, y));
 	}
 
 	#endregion // Public methods

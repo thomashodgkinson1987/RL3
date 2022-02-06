@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objecttypes>
+ <objecttype name="Enemy" color="#a0a0a4">
+  <property name="FollowPlayer" type="bool" default="true"/>
+  <property name="MoveChance" type="int" default="100"/>
+  <property name="Name" type="string" default="Enemy"/>
+  <property name="PlayerSearchRange" type="int" default="8"/>
+  <property name="Symbol" type="string" default="E"/>
+ </objecttype>
+ <objecttype name="Item" color="#a0a0a4">
+  <property name="ItemID" type="string" default="0"/>
+  <property name="Name" type="string" default="Item"/>
+ </objecttype>
+ <objecttype name="NPC" color="#a0a0a4">
+  <property name="FollowPlayer" type="bool" default="false"/>
+  <property name="MoveChance" type="int" default="100"/>
+  <property name="Name" type="string" default="NPC"/>
+  <property name="PlayerSearchRange" type="int" default="8"/>
+  <property name="Symbol" type="string" default="N"/>
+ </objecttype>
+</objecttypes>

@@ -5,8 +5,6 @@ public class Game : Node2D
 
 	private MapGroup node_maps = new MapGroup();
 
-	private Node2D node_actors = new Node2D();
-
 	private Player node_player = new Player();
 
 	private ScreenGroup node_screens = new ScreenGroup();
@@ -17,6 +15,7 @@ public class Game : Node2D
 
 	private Screen node_floorsScreen = new Screen();
 	private Screen node_wallsScreen = new Screen();
+	private Screen node_actorsScreen = new Screen();
 	private Screen node_playerScreen = new Screen();
 
 	private ScreenGroup node_uiScreens = new ScreenGroup();
@@ -36,6 +35,30 @@ public class Game : Node2D
 	private Map m_currentMap;
 	private (int x, int y) m_currentChunk;
 
+	private int m_steps;
+
+	private readonly EventHandler<MapAddedEventArgs> a_OnMapAdded;
+	private readonly EventHandler<MapRemovedEventArgs> a_OnMapRemoved;
+	private readonly EventHandler<MapLoadedEventArgs> a_OnMapLoaded;
+	private readonly EventHandler<MapUnloadedEventArgs> a_OnMapUnloaded;
+
+	private readonly EventHandler<GameObjectAddedEventArgs> a_OnFloorAddedToMap;
+	private readonly EventHandler<GameObjectRemovedEventArgs> a_OnFloorRemovedFromMap;
+
+	private readonly EventHandler<GameObjectAddedEventArgs> a_OnWallAddedToMap;
+	private readonly EventHandler<GameObjectRemovedEventArgs> a_OnWallRemovedFromMap;
+
+	private readonly EventHandler<NPCAddedEventArgs> a_OnActorAddedToMap;
+	private readonly EventHandler<NPCRemovedEventArgs> a_OnActorRemovedFromMap;
+
+	private readonly EventHandler<PointChangedEventArgs> a_OnPlayerPositionChanged;
+	private readonly EventHandler<IntChangedEventArgs> a_OnPlayerHealthChanged;
+	private readonly EventHandler<IntChangedEventArgs> a_OnPlayerMaxHealthChanged;
+
+	private readonly EventHandler<PointChangedEventArgs> a_OnActorPositionChanged;
+
+	private readonly EventHandler<PointChangedEventArgs> a_OnCameraPositionChanged;
+
 	#endregion // Fields
 
 
@@ -47,6 +70,151 @@ public class Game : Node2D
 		m_rng = rng;
 		m_currentMap = new Map();
 		m_currentChunk = (0, 0);
+		m_steps = 0;
+
+		a_OnMapAdded = delegate (object? sender, MapAddedEventArgs args)
+		{
+			int left = args.Map.Position.X;
+			int right = args.Map.Position.X + args.Map.Width - 1;
+			int up = args.Map.Position.Y;
+			int down = args.Map.Position.Y + args.Map.Height - 1;
+
+			node_camera.ExpandBoundsTo(left, right, up, down);
+
+			args.Map.IsDirty = true;
+		};
+
+		a_OnMapRemoved = delegate (object? sender, MapRemovedEventArgs args)
+		{
+			Point position = node_maps.GetMapPosition(args.Map);
+			int width = args.Map.Width;
+			int height = args.Map.Height;
+
+			int left = node_camera.Bounds.Left;
+			int right = node_camera.Bounds.Right;
+			int up = node_camera.Bounds.Up;
+			int down = node_camera.Bounds.Down;
+
+			if (position.X == left || position.X + width - 1 == right || position.Y == up || position.Y + height - 1 == down)
+			{
+				RecalculateCameraBounds();
+			}
+
+			args.Map.IsDirty = true;
+		};
+
+		a_OnMapLoaded = delegate (object? sender, MapLoadedEventArgs args)
+		{
+			args.Map.FloorAdded += a_OnFloorAddedToMap;
+			args.Map.FloorRemoved += a_OnFloorRemovedFromMap;
+			args.Map.WallAdded += a_OnWallAddedToMap;
+			args.Map.WallRemoved += a_OnWallRemovedFromMap;
+			args.Map.ActorAdded += a_OnActorAddedToMap;
+			args.Map.ActorRemoved += a_OnActorRemovedFromMap;
+
+			args.Map.IsDirty = true;
+
+			node_screen.IsDirty = true;
+			node_floorsScreen.IsDirty = true;
+			node_wallsScreen.IsDirty = true;
+			node_actorsScreen.IsDirty = true;
+			node_playerScreen.IsDirty = true;
+		};
+
+		a_OnMapUnloaded = delegate (object? sender, MapUnloadedEventArgs args)
+		{
+			args.Map.FloorAdded -= a_OnFloorAddedToMap;
+			args.Map.FloorRemoved -= a_OnFloorRemovedFromMap;
+			args.Map.WallAdded -= a_OnWallAddedToMap;
+			args.Map.WallRemoved -= a_OnWallRemovedFromMap;
+			args.Map.ActorAdded -= a_OnActorAddedToMap;
+			args.Map.ActorRemoved -= a_OnActorRemovedFromMap;
+
+			args.Map.IsDirty = true;
+
+			node_screen.IsDirty = true;
+			node_floorsScreen.IsDirty = true;
+			node_wallsScreen.IsDirty = true;
+			node_actorsScreen.IsDirty = true;
+			node_playerScreen.IsDirty = true;
+		};
+
+		a_OnPlayerPositionChanged = delegate (object? sender, PointChangedEventArgs args)
+		{
+			node_screen.IsDirty = true;
+			node_playerScreen.IsDirty = true;
+			node_uiScreen.IsDirty = true;
+
+			m_currentMap.IsDirty = true;
+		};
+
+		a_OnPlayerHealthChanged = delegate (object? sender, IntChangedEventArgs args)
+		{
+			node_screen.IsDirty = true;
+			node_uiScreen.IsDirty = true;
+		};
+
+		a_OnPlayerMaxHealthChanged = delegate (object? sender, IntChangedEventArgs args)
+		{
+			node_screen.IsDirty = true;
+			node_uiScreen.IsDirty = true;
+		};
+
+		a_OnActorPositionChanged = delegate (object? sender, PointChangedEventArgs args)
+		{
+			node_screen.IsDirty = true;
+			node_actorsScreen.IsDirty = true;
+		};
+
+		a_OnCameraPositionChanged = delegate (object? sender, PointChangedEventArgs args)
+		{
+			node_screen.IsDirty = true;
+			node_floorsScreen.IsDirty = true;
+			node_wallsScreen.IsDirty = true;
+			node_playerScreen.IsDirty = true;
+			node_actorsScreen.IsDirty = true;
+			node_uiScreen.IsDirty = true;
+		};
+
+		a_OnFloorAddedToMap = delegate (object? sender, GameObjectAddedEventArgs args)
+		{
+			node_screen.IsDirty = true;
+			node_floorsScreen.IsDirty = true;
+		};
+
+		a_OnFloorRemovedFromMap = delegate (object? sender, GameObjectRemovedEventArgs args)
+		{
+			node_screen.IsDirty = true;
+			node_floorsScreen.IsDirty = true;
+		};
+
+		a_OnWallAddedToMap = delegate (object? sender, GameObjectAddedEventArgs args)
+		{
+			node_screen.IsDirty = true;
+			node_wallsScreen.IsDirty = true;
+		};
+
+		a_OnWallRemovedFromMap = delegate (object? sender, GameObjectRemovedEventArgs args)
+		{
+			node_screen.IsDirty = true;
+			node_wallsScreen.IsDirty = true;
+		};
+
+		a_OnActorAddedToMap = delegate (object? sender, NPCAddedEventArgs args)
+		{
+			args.NPC.PositionChanged += a_OnActorPositionChanged;
+
+			node_screen.IsDirty = true;
+			node_actorsScreen.IsDirty = true;
+		};
+
+		a_OnActorRemovedFromMap = delegate (object? sender, NPCRemovedEventArgs args)
+		{
+			args.NPC.PositionChanged -= a_OnActorPositionChanged;
+
+			node_screen.IsDirty = true;
+			node_actorsScreen.IsDirty = true;
+		};
 	}
 
 	public Game(string name, Random rng) : this(name, 0, 0, rng) { }
@@ -65,9 +233,9 @@ public class Game : Node2D
 	{
 		base.Init();
 
-		node_maps = RootNode.GetNode<MapGroup>("Maps");
+		// Get nodes
 
-		node_actors = RootNode.GetNode<Node2D>("Actors");
+		node_maps = RootNode.GetNode<MapGroup>("Maps");
 
 		node_player = RootNode.GetNode<Player>("Player");
 
@@ -79,6 +247,7 @@ public class Game : Node2D
 
 		node_floorsScreen = node_gameScreens.GetNode<Screen>("FloorsScreen");
 		node_wallsScreen = node_gameScreens.GetNode<Screen>("WallsScreen");
+		node_actorsScreen = node_gameScreens.GetNode<Screen>("ActorsScreen");
 		node_playerScreen = node_gameScreens.GetNode<Screen>("PlayerScreen");
 
 		node_uiScreens = node_screens.GetNode<ScreenGroup>("UIScreens");
@@ -87,91 +256,21 @@ public class Game : Node2D
 
 		node_camera = RootNode.GetNode<Camera>("Camera");
 
-		node_maps.MapAdded += delegate (object? sender, MapAddedEventArgs args)
-		{
-			args.Map.FloorAdded += delegate (object? sender, GameObjectAddedEventArgs args1)
-			{
-				node_screen.IsDirty = true;
-				node_floorsScreen.IsDirty = true;
-			};
+		// Wire up events
 
-			args.Map.FloorRemoved += delegate (object? sender, GameObjectRemovedEventArgs args1)
-			{
-				node_screen.IsDirty = true;
-				node_floorsScreen.IsDirty = true;
-			};
+		node_maps.MapAdded += a_OnMapAdded;
+		node_maps.MapRemoved += a_OnMapRemoved;
+		node_maps.MapLoaded += a_OnMapLoaded;
+		node_maps.MapUnloaded += a_OnMapUnloaded;
 
-			args.Map.WallAdded += delegate (object? sender, GameObjectAddedEventArgs args1)
-			{
-				node_screen.IsDirty = true;
-				node_wallsScreen.IsDirty = true;
-			};
+		node_player.PositionChanged += a_OnPlayerPositionChanged;
+		node_player.HealthChanged += a_OnPlayerHealthChanged;
+		node_player.MaxHealthChanged += a_OnPlayerMaxHealthChanged;
 
-			args.Map.WallRemoved += delegate (object? sender, GameObjectRemovedEventArgs args1)
-			{
-				node_screen.IsDirty = true;
-				node_wallsScreen.IsDirty = true;
-			};
+		node_camera.PositionChanged += a_OnCameraPositionChanged;
 
-			int left = args.Map.Position.X;
-			int right = args.Map.Position.X + args.Map.Width;
-			int up = args.Map.Position.Y;
-			int down = args.Map.Position.Y + args.Map.Height;
+		// Populate and load maps
 
-			node_camera.ExpandBoundsTo(left, right, up, down);
-		};
-
-		node_maps.MapRemoved += delegate (object? sender, MapRemovedEventArgs args)
-		{
-			if (args.Map.Position.X == node_camera.Bounds.Left || args.Map.Position.X + args.Map.Width - 1 == node_camera.Bounds.Right
-					|| args.Map.Position.Y == node_camera.Bounds.Up || args.Map.Position.Y + args.Map.Height - 1 == node_camera.Bounds.Down)
-			{
-				RecalculateCameraBounds();
-			}
-		};
-
-		node_maps.MapLoaded += delegate (object? sender, MapLoadedEventArgs args)
-		{
-			node_screen.IsDirty = true;
-			node_floorsScreen.IsDirty = true;
-			node_wallsScreen.IsDirty = true;
-		};
-
-		node_maps.MapUnloaded += delegate (object? sender, MapUnloadedEventArgs args)
-		{
-			node_screen.IsDirty = true;
-			node_floorsScreen.IsDirty = true;
-			node_wallsScreen.IsDirty = true;
-		};
-
-		node_player.HealthChanged += delegate (object? sender, IntChangedEventArgs args)
-		{
-			node_screen.IsDirty = true;
-			node_uiScreen.IsDirty = true;
-		};
-
-		node_player.MaxHealthChanged += delegate (object? sender, IntChangedEventArgs args)
-		{
-			node_screen.IsDirty = true;
-			node_uiScreen.IsDirty = true;
-		};
-
-		node_player.PositionChanged += delegate (object? sender, PointChangedEventArgs args)
-		{
-			node_screen.IsDirty = true;
-			node_playerScreen.IsDirty = true;
-			node_uiScreen.IsDirty = true;
-		};
-
-		node_camera.PositionChanged += delegate (object? sender, PointChangedEventArgs args)
-		{
-			node_screen.IsDirty = true;
-			node_floorsScreen.IsDirty = true;
-			node_wallsScreen.IsDirty = true;
-			node_playerScreen.IsDirty = true;
-			node_uiScreen.IsDirty = true;
-		};
-	
 		List<Map> maps = new List<Map>();
 		maps.Add(StaticMaps.GetMap1());
 		maps.Add(StaticMaps.GetMap2(m_rng));
@@ -197,16 +296,17 @@ public class Game : Node2D
 				{
 					char[] symbols = { 'A', 'B', '%', '&', '$', '£', 'P', 'M' };
 
-					int x = m_rng.Next(0, 15) * j;
-					int y = m_rng.Next(0, 15) * i;
+					int x = m_rng.Next(0, 15);
+					int y = m_rng.Next(0, 15);
 					char symbol = symbols[m_rng.Next(0, 8)];
-					NPC npc = new NPC("NPC", x, y, symbol, m_rng);
-					npc.IsFollowPlayer = m_rng.Next(0, 2) == 0;
-					npc.ChanceToDoRandomMove = m_rng.Next(0, 75);
-					node_actors.AddChild(npc);
+					NPC actor = new NPC("NPC", x, y, m_rng);
+					actor.Symbol = symbol;
+					actor.IsFollowPlayer = m_rng.Next(0, 2) == 0;
+					actor.ChanceToDoMove = m_rng.Next(0, 75);
+					map.AddActor(actor, x, y);
 				}
 
-				node_maps.AddMap(j, i, map);
+				node_maps.AddMap(map, j, i);
 			}
 		}
 
@@ -221,6 +321,8 @@ public class Game : Node2D
 			}
 		}
 
+		// Final clears
+
 		Console.Clear();
 		TickCamera();
 		Draw();
@@ -234,19 +336,81 @@ public class Game : Node2D
 
 	public void Tick(ConsoleKeyInfo consoleKeyInfo)
 	{
-		foreach(NPC npc in node_actors.Children)
+		m_steps++;
+
 		{
-			npc.Tick(this);
+			node_player.Tick(consoleKeyInfo, this);
+
+			int newChunkX = (int)MathF.Floor(node_player.GlobalPosition.X / 16f);
+			int newChunkY = (int)MathF.Floor(node_player.GlobalPosition.Y / 16f);
+
+			if (newChunkX != m_currentChunk.x || newChunkY != m_currentChunk.y)
+			{
+				UpdateLoadedMaps(newChunkX, newChunkY);
+			}
 		}
 
-		node_player.Tick(consoleKeyInfo, this);
-
-		int newChunkX = (int)MathF.Floor(node_player.GlobalPosition.X / 16f);
-		int newChunkY = (int)MathF.Floor(node_player.GlobalPosition.Y / 16f);
-
-		if (newChunkX != m_currentChunk.x || newChunkY != m_currentChunk.y)
+		foreach(NPC actor in node_maps.ActiveActors)
 		{
-			UpdateLoadedMaps(newChunkX, newChunkY);
+			Point previousPosition = actor.Position;
+			Point previousGlobalPosition = actor.GlobalPosition;
+			int previousChunkX = (int)MathF.Floor(previousGlobalPosition.X / 16f);
+			int previousChunkY = (int)MathF.Floor(previousGlobalPosition.Y / 16f);
+			Point previousChunk = new Point(previousChunkX, previousChunkY);
+
+			actor.Tick(this);
+
+			Point newPosition = actor.Position;
+			Point newGlobalPosition = actor.GlobalPosition;
+			int newChunkX = (int)MathF.Floor(newGlobalPosition.X / 16f);
+			int newChunkY = (int)MathF.Floor(newGlobalPosition.Y / 16f);
+			Point newChunk = new Point(newChunkX, newChunkY);
+
+			if (previousChunk != newChunk)
+			{
+				Map previousMap = node_maps.GetMap(previousChunk);
+				Map newMap = node_maps.GetMap(newChunk);
+
+				int dirX = previousChunkX < newChunkX ? 1 : previousChunkX > newChunkX ? -1 : 0;
+				int dirY = previousChunkY < newChunkY ? 1 : previousChunkY > newChunkY ? -1 : 0;
+
+				previousMap.RemoveActor(actor);
+
+				if (dirX == -1 && dirY == 0)
+				{
+					actor.SetPositionX(15);
+				}
+				else if (dirX == 1 && dirY == 0)
+				{
+					actor.SetPositionX(0);
+				}
+				else if (dirX == 0 && dirY == -1)
+				{
+					actor.SetPositionY(15);
+				}
+				else if (dirX == 0 && dirY == 1)
+				{
+					actor.SetPositionY(0);
+				}
+				else if (dirX == -1 && dirY == -1)
+				{
+					actor.SetPosition(15, 15);
+				}
+				else if (dirX == 1 && dirY == -1)
+				{
+					actor.SetPosition(0, 15);
+				}
+				else if (dirX == -1 && dirY == 1)
+				{
+					actor.SetPosition(15, 0);
+				}
+				else if (dirX == 1 && dirY == 1)
+				{
+					actor.SetPosition(0, 0);
+				}
+
+				newMap.AddActor(actor, actor.Position);
+			}
 		}
 
 		TickCamera();
@@ -260,21 +424,26 @@ public class Game : Node2D
 			node_screen.Clear();
 		}
 
-		if (node_floorsScreen.IsDirty && node_wallsScreen.IsDirty)
+		if (node_floorsScreen.IsDirty || node_wallsScreen.IsDirty || node_actorsScreen.IsDirty)
 		{
 			bool wasFloorsScreenDirty = node_floorsScreen.IsDirty;
 			bool wasWallsScreenDirty = node_wallsScreen.IsDirty;
+			bool wasActorsScreenDirty = node_actorsScreen.IsDirty;
 
 			if (node_floorsScreen.IsDirty)
 			{
 				node_floorsScreen.IsDirty = false;
 				node_floorsScreen.Clear();
 			}
-
 			if (node_wallsScreen.IsDirty)
 			{
 				node_wallsScreen.IsDirty = false;
 				node_wallsScreen.Clear();
+			}
+			if (node_actorsScreen.IsDirty)
+			{
+				node_actorsScreen.IsDirty = false;
+				node_actorsScreen.Clear();
 			}
 
 			foreach(Map map in node_maps.ActiveMaps)
@@ -308,6 +477,20 @@ public class Game : Node2D
 						}
 					}
 				}
+
+				if (wasActorsScreenDirty)
+				{
+					foreach (NPC actor in map.Actors)
+					{
+						if (!actor.IsVisible) continue;
+
+						Point actorGlobalPosition = globalPosition + actor.Position;
+						if (node_actorsScreen.IsPositionOnScreen(actorGlobalPosition))
+						{
+							node_actorsScreen.SetSymbol(actorGlobalPosition, actor.Symbol);
+						}
+					}
+				}
 			}
 		}
 
@@ -315,14 +498,6 @@ public class Game : Node2D
 		{
 			node_playerScreen.IsDirty = false;
 			node_playerScreen.Clear();
-			foreach(NPC npc in node_actors.Children)
-			{
-				Point npcGlobalPosition = npc.GlobalPosition - node_camera.GlobalPosition;
-				if (node_playerScreen.IsPositionOnScreen(npcGlobalPosition))
-				{
-					node_playerScreen.SetSymbol(npcGlobalPosition, npc.Symbol);
-				}
-			}
 			if (node_player.IsVisible)
 			{
 				Point playerGlobalPosition = node_player.GlobalPosition - node_camera.GlobalPosition;
@@ -353,6 +528,8 @@ public class Game : Node2D
 	{
 		bool isFloor = false;
 		bool isWall = false;
+		bool isPlayer = position == node_player.GlobalPosition;
+		bool isActor = false;
 
 		foreach(Map map in node_maps.ActiveMaps)
 		{
@@ -375,10 +552,19 @@ public class Game : Node2D
 					break;
 				}
 			}
-			if (isFloor && isWall) break;
+			foreach(NPC actor in map.Actors)
+			{
+				Point actorGlobalPosition = actor.Position + globalPosition;
+				if (position == actorGlobalPosition)
+				{
+					isActor = true;
+					break;
+				}
+			}
+			if (isFloor && isWall && isActor) break;
 		}
 
-		return isFloor && !isWall;
+		return isFloor && !isWall && !isPlayer && !isActor;
 	}
 
 	public bool IsClear(int x, int y)
@@ -397,26 +583,57 @@ public class Game : Node2D
 		node_screen.IsDirty = true;
 		node_floorsScreen.IsDirty = true;
 		node_wallsScreen.IsDirty = true;
+		node_actorsScreen.IsDirty = true;
+		node_playerScreen.IsDirty = true;
+		node_uiScreen.IsDirty = true;
 
 		m_currentChunk = (chunkX, chunkY);
 		m_currentMap = node_maps.GetMap(m_currentChunk.x, m_currentChunk.y);
 
+		(int x, int y) chunk = (chunkX, chunkY);
+
+		for (int i = -1; i >= -node_maps.MapLoadDistance; i--)
+		{
+			if (!node_maps.IsMapAtPosition(chunkX + i, chunkY))
+			{
+				chunk.x += 1;
+			}
+		}
+		for (int i = 1; i <= node_maps.MapLoadDistance; i++)
+		{
+			if (!node_maps.IsMapAtPosition(chunkX + i, chunkY))
+			{
+				chunk.x -= 1;
+			}
+		}
+		for (int i = -1; i >= -node_maps.MapLoadDistance; i--)
+		{
+			if (!node_maps.IsMapAtPosition(chunkX, chunkY + i))
+			{
+				chunk.y += 1;
+			}
+		}
+		for (int i = 1; i <= node_maps.MapLoadDistance; i++)
+		{
+			if (!node_maps.IsMapAtPosition(chunkX, chunkY + i))
+			{
+				chunk.y -= 1;
+			}
+		}
+		
 		List<Map> newMaps = new List<Map>();
 
 		for (int i = -node_maps.MapLoadDistance; i <= node_maps.MapLoadDistance; i++)
 		{
 			for (int j = -node_maps.MapLoadDistance; j <= node_maps.MapLoadDistance; j++)
 			{
-				int x = m_currentChunk.x + j;
-				int y = m_currentChunk.y + i;
-				if (node_maps.IsMapAtPosition(x, y))
+				int x = chunk.x + j;
+				int y = chunk.y + i;
+				Map map = node_maps.GetMap(x, y);
+				newMaps.Add(map);
+				if (!node_maps.IsMapLoaded(map))
 				{
-					Map map = node_maps.GetMap(x, y);
-					newMaps.Add(map);
-					if (!node_maps.IsMapLoaded(map))
-					{
-						node_maps.LoadMap(map);
-					}
+					node_maps.LoadMap(map);
 				}
 			}
 		}
@@ -471,9 +688,9 @@ public class Game : Node2D
 	private void RecalculateCameraBounds()
 	{
 		int left = node_maps.AllMaps.Min(_ => _.GlobalPosition.X);
-		int right = node_maps.AllMaps.Max(_ => _.GlobalPosition.X) + m_currentMap.Width;
+		int right = node_maps.AllMaps.Max(_ => _.GlobalPosition.X) + m_currentMap.Width - 1;
 		int up = node_maps.AllMaps.Min(_ => _.GlobalPosition.Y);
-		int down = node_maps.AllMaps.Max(_ => _.GlobalPosition.Y) + m_currentMap.Height;
+		int down = node_maps.AllMaps.Max(_ => _.GlobalPosition.Y) + m_currentMap.Height - 1;
 
 		node_camera.SetBounds(left, right, up, down);
 	}
@@ -498,11 +715,12 @@ public class Game : Node2D
 		node_uiScreen.SetSymbol(node_uiScreen.Width - 1, node_uiScreen.Height - 1, '┘');
 
 		node_uiScreen.DrawText(1, 1, Screen.EDirection.Right, $"Player: x={node_player.Position.X} y={node_player.Position.Y} gx={node_player.GlobalPosition.X} gy={node_player.GlobalPosition.Y} cx={m_currentChunk.x} cy={m_currentChunk.y}");
+		node_uiScreen.DrawText(node_uiScreen.Width - 2, 1, Screen.EDirection.Left, $"Steps: {m_steps}");
 		node_uiScreen.DrawText(1, 2, Screen.EDirection.Right, $"Camera position: x={node_camera.Position.X} y={node_camera.Position.Y} gx={node_camera.GlobalPosition.X} gy={node_camera.GlobalPosition.Y} w={node_camera.Width} h={node_camera.Height}");
 		node_uiScreen.DrawText(1, 3, Screen.EDirection.Right, $"Camera bounds: left={node_camera.Bounds.Left} right={node_camera.Bounds.Right} up={node_camera.Bounds.Up} down={node_camera.Bounds.Down}");
 		node_uiScreen.DrawText(1, 4, Screen.EDirection.Right, $"Maps: all={node_maps.AllMaps.Count} active={node_maps.ActiveMaps.Count}");
-		node_uiScreen.DrawText(1, 5, Screen.EDirection.Right, $"Floors: all={node_maps.AllFloors.Count} active={node_maps.ActiveFloors.Count}");
-		node_uiScreen.DrawText(1, 6, Screen.EDirection.Right, $"Walls: all={node_maps.AllWalls.Count} active={node_maps.ActiveWalls.Count}");
+		node_uiScreen.DrawText(node_uiScreen.Width - 2, 4, Screen.EDirection.Left, $"Actors: all={node_maps.AllActors.Count} active={node_maps.ActiveActors.Count}");
+		node_uiScreen.DrawText(1, 5, Screen.EDirection.Right, $"Actors in this chunk: {m_currentMap.Actors.Count}");
 	}
 
 	#endregion // Private methods

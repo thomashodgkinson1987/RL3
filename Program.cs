@@ -7,8 +7,8 @@ class Program
 
 		int screenX = 0;
 		int screenY = 0;
-		int screenW = 64;
-		int screenH = 32;
+		int screenW = 63;
+		int screenH = 31;
 
 		int playerX = 1;
 		int playerY = 1;
@@ -19,15 +19,6 @@ class Program
 			screenH = int.Parse(args[1]);
 			playerX = int.Parse(args[2]);
 			playerY = int.Parse(args[3]);
-		}
-		else if (args.Length == 6)
-		{
-			screenX = int.Parse(args[0]);
-			screenY = int.Parse(args[1]);
-			screenW = int.Parse(args[2]);
-			screenH = int.Parse(args[3]);
-			playerX = int.Parse(args[4]);
-			playerY = int.Parse(args[5]);
 		}
 
 		Random rng = new Random();
@@ -43,12 +34,6 @@ class Program
 		MapGroup mapGroup = new MapGroup("Maps");
 
 		rootNode.AddChild(mapGroup);
-
-		//
-
-		Node2D actors = new Node2D("Actors");
-
-		rootNode.AddChild(actors);
 
 		//
 
@@ -75,14 +60,16 @@ class Program
 		int gameWindowX = screenX;
 		int gameWindowY = screenY;
 		int gameWindowW = screenW;
-		int gameWindowH = (int)MathF.Floor((screenH / 4f) * 3);
+		int gameWindowH = (int)MathF.Ceiling((screenH / 4f) * 3);
 
 		Screen floorsScreen = new Screen("FloorsScreen", gameWindowX, gameWindowY, gameWindowW, gameWindowH);
 		Screen wallsScreen = new Screen("WallsScreen", gameWindowX, gameWindowY, gameWindowW, gameWindowH);
+		Screen actorsScreen = new Screen("ActorsScreen", gameWindowX, gameWindowY, gameWindowW, gameWindowH);
 		Screen playerScreen = new Screen("PlayerScreen", gameWindowX, gameWindowY, gameWindowW, gameWindowH);
 
 		gameScreens.AddChild(floorsScreen);
 		gameScreens.AddChild(wallsScreen);
+		gameScreens.AddChild(actorsScreen);
 		gameScreens.AddChild(playerScreen);
 
 		screens.AddChild(gameScreens);
@@ -105,15 +92,15 @@ class Program
 
 		//
 
-		Game game = new Game("Game", rng);
-
-		rootNode.AddChild(game);
-
-		//
-
 		Camera camera = new Camera("Camera", gameWindowX, gameWindowY, gameWindowW, gameWindowH);
 
 		rootNode.AddChild(camera);
+
+		//
+
+		Game game = new Game("Game", rng);
+
+		rootNode.AddChild(game);
 
 		//
 
