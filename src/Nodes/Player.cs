@@ -1,4 +1,4 @@
-public class Player : GameObject
+public class Player : Actor
 {
 
 	#region Properties
@@ -57,19 +57,17 @@ public class Player : GameObject
 
 	#region Constructors
 
-	public Player(string name, int x, int y, int health) : base(name, x, y, '@')
+	public Player(string name, int x, int y, char symbol, Random rng) : base(name, x, y, symbol, rng)
 	{
-		_health = health;
-		_maxHealth = health;
+		_health = 10;
+		_maxHealth = 10;
 	}
 
-	public Player(string name, int health) : this(name, 0, 0, health) { }
+	public Player(string name, char symbol, Random rng) : this(name, 0, 0, symbol, rng) { }
 
-	public Player(int x, int y, int health) : this("Player", x, y, health) { }
+	public Player(int x, int y, char symbol, Random rng) : this("Player", x, y, symbol, rng) { }
 
-	public Player(int health) : this("Player", 0, 0, health) { }
-
-	public Player() : this(10) { }
+	public Player(char symbol, Random rng) : this("Player", 0, 0, symbol, rng) { }
 
 	#endregion // Constructors
 

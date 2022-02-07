@@ -1,11 +1,11 @@
-public class StaticMaps
+public class StaticMapChunks
 {
 
-	private StaticMaps () { }
+	private StaticMapChunks () { }
 
-	public static Map GetMap1()
+	public static MapChunk GetMapChunk1()
 	{
-		Map map = new Map();
+		MapChunk mapChunk = new MapChunk();
 
 		int[,] floors = new int[16,16]
 		{
@@ -47,15 +47,15 @@ public class StaticMaps
 			{1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1},
 		};
 
-		AddFloors(floors, map);
-		AddWalls(walls, map);
+		AddFloors(floors, mapChunk);
+		AddWalls(walls, mapChunk);
 
-		return map;
+		return mapChunk;
 	}
 
-	public static Map GetMap2(Random rng)
+	public static MapChunk GetMapChunk2(Random rng)
 	{
-		Map map = new Map();
+		MapChunk mapChunk = new MapChunk();
 
 		int[,] walls = new int[16,16]
 		{
@@ -77,7 +77,7 @@ public class StaticMaps
 			{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
 		};
 
-		FillFloors(map);
+		FillFloors(mapChunk);
 
 		int c = rng.Next(0, 4);
 		if (c == 0)
@@ -92,7 +92,7 @@ public class StaticMaps
 				}
 			}
 
-			AddWalls(walls2, map);
+			AddWalls(walls2, mapChunk);
 		}
 		else if (c == 1)
 		{
@@ -109,7 +109,7 @@ public class StaticMaps
 				}
 			}
 
-			AddWalls(walls2, map);
+			AddWalls(walls2, mapChunk);
 		}
 		else if (c == 2)
 		{
@@ -123,7 +123,7 @@ public class StaticMaps
 				}
 			}
 
-			AddWalls(walls2, map);
+			AddWalls(walls2, mapChunk);
 		}
 		else if (c == 3)
 		{
@@ -137,19 +137,19 @@ public class StaticMaps
 				}
 			}
 
-			AddWalls(walls2, map);
+			AddWalls(walls2, mapChunk);
 		}
 		else
 		{
-			AddWalls(walls, map);
+			AddWalls(walls, mapChunk);
 		}
 
-		return map;
+		return mapChunk;
 	}
 
-	public static Map GetMap3()
+	public static MapChunk GetMapChunk3()
 	{
-		Map map = new Map();
+		MapChunk mapChunk = new MapChunk();
 
 		int[,] walls = new int[16,16]
 		{
@@ -171,17 +171,17 @@ public class StaticMaps
 			{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
 		};
 
-		FillFloors(map);
-		AddWalls(walls, map);
+		FillFloors(mapChunk);
+		AddWalls(walls, mapChunk);
 
-		return map;
+		return mapChunk;
 	}
 
-	public static Map GetMap4(Random rng)
+	public static MapChunk GetMapChunk4(Random rng)
 	{
-		Map map = new Map();
+		MapChunk mapChunk = new MapChunk();
 
-		FillFloors(map);
+		FillFloors(mapChunk);
 
 		for(int i = 0; i < 16; i++)
 		{
@@ -189,22 +189,22 @@ public class StaticMaps
 			{
 				if (rng.Next(0, 100) < 5)
 				{
-					GameObject wall = new GameObject(j, i, '#');
-					map.AddWall(wall, wall.Position);
+					Wall wall = new Wall(j, i);
+					mapChunk.AddWall(wall, wall.Position);
 				}
 			}
 		}
 
-		return map;
+		return mapChunk;
 	}
 
-	public static Map GetMap5(Random rng)
+	public static MapChunk GetMapChunk5(Random rng)
 	{
-		Map map = new Map();
+		MapChunk mapChunk = new MapChunk();
 
-		FillFloors(map);
+		FillFloors(mapChunk);
 
-		return map;
+		return mapChunk;
 	}
 
 	private static int[,] GetBlankInts()
@@ -232,7 +232,7 @@ public class StaticMaps
 		return ints;
 	}
 
-	private static void AddFloors(int[,] floors, Map map)
+	private static void AddFloors(int[,] floors, MapChunk mapChunk)
 	{
 		for(int i = 0; i < floors.GetLength(0); i++)
 		{
@@ -240,14 +240,14 @@ public class StaticMaps
 			{
 				if (floors[i,j] == 1)
 				{
-					GameObject floor = new GameObject(j, i, '.');
-					map.AddFloor(floor, floor.Position);
+					Floor floor = new Floor(j, i);
+					mapChunk.AddFloor(floor, floor.Position);
 				}
 			}
 		}
 	}
 
-	private static void AddWalls(int[,] walls, Map map)
+	private static void AddWalls(int[,] walls, MapChunk mapChunk)
 	{
 		for(int i = 0; i < walls.GetLength(0); i++)
 		{
@@ -255,33 +255,33 @@ public class StaticMaps
 			{
 				if (walls[i,j] == 1)
 				{
-					GameObject wall = new GameObject(j, i, '#');
-					map.AddWall(wall, wall.Position);
+					Wall wall = new Wall(j, i);
+					mapChunk.AddWall(wall, wall.Position);
 				}
 			}
 		}
 	}
 
-	private static void FillFloors(Map map)
+	private static void FillFloors(MapChunk mapChunk)
 	{
-		for(int i = 0; i < map.Height; i++)
+		for(int i = 0; i < mapChunk.Height; i++)
 		{
-			for(int j = 0; j < map.Width; j++)
+			for(int j = 0; j < mapChunk.Width; j++)
 			{
-				GameObject floor = new GameObject(j, i, '.');
-				map.AddFloor(floor, floor.Position);
+				Floor floor = new Floor(j, i);
+				mapChunk.AddFloor(floor, floor.Position);
 			}
 		}
 	}
 
-	private static void FillWalls(Map map)
+	private static void FillWalls(MapChunk mapChunk)
 	{
-		for(int i = 0; i < map.Height; i++)
+		for(int i = 0; i < mapChunk.Height; i++)
 		{
-			for(int j = 0; j < map.Width; j++)
+			for(int j = 0; j < mapChunk.Width; j++)
 			{
-				GameObject wall = new GameObject(j, i, '#');
-				map.AddWall(wall, wall.Position);
+				Wall wall = new Wall(j, i);
+				mapChunk.AddWall(wall, wall.Position);
 			}
 		}
 	}

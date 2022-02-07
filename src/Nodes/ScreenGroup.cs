@@ -3,7 +3,7 @@ public class ScreenGroup : Node2D
 
 	#region Properties
 
-	public List<Screen> Screens { get; private set; }
+	public List<Screen> Screens { get; }
 
 	#endregion // Properties
 
@@ -20,7 +20,7 @@ public class ScreenGroup : Node2D
 
 	public ScreenGroup(string name) : this(name, 0, 0) { }
 
-	public ScreenGroup() : this(0, 0) { }
+	public ScreenGroup() : this("ScreenGroup", 0, 0) { }
 
 	#endregion // Constructors
 

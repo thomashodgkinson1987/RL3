@@ -1,26 +1,35 @@
 public class Map : Node2D
 {
 
-	#region Nodes
-
-	private readonly Node2D node_floors = new Node2D();
-	private readonly Node2D node_walls = new Node2D();
-	private readonly Node2D node_actors = new Node2D();
-
-	#endregion // Nodes
-
-
-
 	#region Properties
 
-	public int Width { get; private set; }
-	public int Height { get; private set; }
+	public List<MapChunk> AllMapChunks { get; }
+	public List<MapChunk> ActiveMapChunks { get; }
 
-	public List<GameObject> Floors { get; }
-	public List<GameObject> Walls { get; }
-	public List<NPC> Actors { get; }
+	public List<Floor> AllFloors { get; }
+	public List<Floor> ActiveFloors { get; }
 
-	public bool IsDirty { get; set; }
+	public List<Wall> AllWalls { get; }
+	public List<Wall> ActiveWalls { get; }
+
+	public List<Actor> AllActors { get; }
+	public List<Actor> ActiveActors { get; }
+
+	private int _mapChunkLoadDistance;
+	public int MapChunkLoadDistance
+	{
+		get => _mapChunkLoadDistance;
+		set
+		{
+			IntChangedEventArgs args = new IntChangedEventArgs();
+			args.IntBeforeChange = _mapChunkLoadDistance;
+
+			_mapChunkLoadDistance = value;
+
+			args.IntAfterChange = _mapChunkLoadDistance;
+			OnMapChunkLoadDistanceChanged(args);
+		}
+	}
 
 	#endregion // Properties
 
@@ -28,19 +37,23 @@ public class Map : Node2D
 
 	#region Events
 
-	public event EventHandler<GameObjectAddedEventArgs>? FloorAdded;
-	public event EventHandler<GameObjectRemovedEventArgs>? FloorRemoved;
+	public event EventHandler<MapChunkAddedEventArgs>? MapChunkAdded;
+	public event EventHandler<MapChunkRemovedEventArgs>? MapChunkRemoved;
 
-	public event EventHandler<GameObjectAddedEventArgs>? WallAdded;
-	public event EventHandler<GameObjectRemovedEventArgs>? WallRemoved;
+	public event EventHandler<MapChunkLoadedEventArgs>? MapChunkLoaded;
+	public event EventHandler<MapChunkUnloadedEventArgs>? MapChunkUnloaded;
 
-	public event EventHandler<NPCAddedEventArgs>? ActorAdded;
-	public event EventHandler<NPCRemovedEventArgs>? ActorRemoved;
-
-	public event EventHandler<GameObjectAddedEventArgs>? GameObjectAdded;
-	public event EventHandler<GameObjectRemovedEventArgs>? GameObjectRemoved;
+	public event EventHandler<IntChangedEventArgs>? MapChunkLoadDistanceChanged;
 
 	#endregion // Events
+
+
+
+	#region Fields
+
+	private readonly Dictionary<(int x, int y), MapChunk> m_mapChunks;
+
+	#endregion // Fields
 
 
 
@@ -48,22 +61,21 @@ public class Map : Node2D
 
 	public Map(string name, int x, int y) : base(name, x, y)
 	{
-		node_floors = new Node2D("Floors");
-		node_walls = new Node2D("Walls");
-		node_actors = new Node2D("Actors");
+		m_mapChunks = new Dictionary<(int x, int y), MapChunk>();
 
-		AddChild(node_floors);
-		AddChild(node_walls);
-		AddChild(node_actors);
+		AllMapChunks = new List<MapChunk>();
+		ActiveMapChunks = new List<MapChunk>();
 
-		Width = 16;
-		Height = 16;
+		AllFloors = new List<Floor>();
+		ActiveFloors = new List<Floor>();
 
-		Floors = new List<GameObject>();
-		Walls = new List<GameObject>();
-		Actors = new List<NPC>();
+		AllWalls = new List<Wall>();
+		ActiveWalls = new List<Wall>();
 
-		IsDirty = true;
+		AllActors = new List<Actor>();
+		ActiveActors = new List<Actor>();
+
+		_mapChunkLoadDistance = 2;
 	}
 
 	public Map(string name) : this(name, 0, 0) { }
@@ -78,94 +90,198 @@ public class Map : Node2D
 
 	#region Public methods
 
-	public void AddFloor(GameObject floor, Point position)
+	public bool IsMapChunkAtPosition(Point position)
 	{
-		floor.SetPosition(position);
-		node_floors.AddChild(floor);
-		Floors.Add(floor);
-
-		GameObjectAddedEventArgs args = new GameObjectAddedEventArgs();
-		args.GameObject = floor;
-		OnGameObjectAdded(args);
-		OnFloorAdded(args);
+		return m_mapChunks.ContainsKey((position.X, position.Y));
 	}
 
-	public void AddFloor(GameObject floor, int x, int y)
+	public bool IsMapChunkAtPosition(int x, int y)
 	{
-		AddFloor(floor, new Point(x, y));
+		return IsMapChunkAtPosition(new Point(x, y));
 	}
 
-	public void RemoveFloor(GameObject floor)
+	public bool IsMapChunkLoaded(Point position)
 	{
-		node_floors.RemoveChild(floor);
-		Floors.Remove(floor);
-
-		GameObjectRemovedEventArgs args = new GameObjectRemovedEventArgs();
-		args.GameObject = floor;
-		OnGameObjectRemoved(args);
-		OnFloorRemoved(args);
+		MapChunk mapChunk = GetMapChunk(position);
+		return ActiveMapChunks.Contains(mapChunk);
 	}
 
-	public void AddWall(GameObject wall, Point position)
+	public bool IsMapChunkLoaded(int x, int y)
 	{
-		wall.SetPosition(position);
-		node_walls.AddChild(wall);
-		Walls.Add(wall);
-
-		GameObjectAddedEventArgs args = new GameObjectAddedEventArgs();
-		args.GameObject = wall;
-		OnGameObjectAdded(args);
-		OnWallAdded(args);
+		return IsMapChunkLoaded(new Point(x, y));
 	}
 
-	public void AddWall(GameObject wall, int x, int y)
+	public bool IsMapChunkLoaded(MapChunk mapChunk)
 	{
-		AddWall(wall, new Point(x, y));
+		Point position = GetMapChunkPosition(mapChunk);
+		return IsMapChunkLoaded(position);
 	}
 
-	public void RemoveWall(GameObject wall)
+	public MapChunk GetMapChunk(Point position)
 	{
-		node_walls.RemoveChild(wall);
-		Walls.Remove(wall);
-
-		GameObjectRemovedEventArgs args = new GameObjectRemovedEventArgs();
-		args.GameObject = wall;
-		OnGameObjectRemoved(args);
-		OnWallRemoved(args);
+		return m_mapChunks[(position.X, position.Y)];
 	}
 
-	public void AddActor(NPC actor, Point position)
+	public MapChunk GetMapChunk(int x, int y)
 	{
-		actor.SetPosition(position);
-		node_actors.AddChild(actor);
-		Actors.Add(actor);
-
-		GameObjectAddedEventArgs args = new GameObjectAddedEventArgs();
-		args.GameObject = actor;
-		OnGameObjectAdded(args);
-
-		NPCAddedEventArgs args1 = new NPCAddedEventArgs();
-		args1.NPC = actor;
-		OnActorAdded(args1);
+		return GetMapChunk(new Point(x, y));
 	}
 
-	public void AddActor(NPC actor, int x, int y)
+	public Point GetMapChunkPosition(MapChunk mapChunk)
 	{
-		AddActor(actor, new Point(x, y));
+		(int x, int y) position = (0, 0);
+
+		foreach (KeyValuePair<(int x, int y), MapChunk> kvp in m_mapChunks)
+		{
+			if (kvp.Value == mapChunk)
+			{
+				position = kvp.Key;
+				break;
+			}
+		}
+
+		return new Point(position.x, position.y);
 	}
 
-	public void RemoveActor(NPC actor)
+	public void AddMapChunk(MapChunk mapChunk, Point position)
 	{
-		node_actors.RemoveChild(actor);
-		Actors.Remove(actor);
+		int x = mapChunk.Width * position.X;
+		int y = mapChunk.Height * position.Y;
+		mapChunk.SetPosition(x, y);
 
-		GameObjectRemovedEventArgs args = new GameObjectRemovedEventArgs();
-		args.GameObject = actor;
-		OnGameObjectRemoved(args);
+		m_mapChunks.Add((position.X, position.Y), mapChunk);
 
-		NPCRemovedEventArgs args1 = new NPCRemovedEventArgs();
-		args1.NPC = actor;
-		OnActorRemoved(args1);
+		AllMapChunks.Add(mapChunk);
+
+		foreach (Floor floor in mapChunk.Floors)
+		{
+			AllFloors.Add(floor);
+		}
+		foreach (Wall wall in mapChunk.Walls)
+		{
+			AllWalls.Add(wall);
+		}
+		foreach(Actor actor in mapChunk.Actors)
+		{
+			AllActors.Add(actor);
+		}
+
+		AddChild(mapChunk);
+
+		MapChunkAddedEventArgs args = new MapChunkAddedEventArgs();
+		args.MapChunk = mapChunk;
+		OnMapChunkAdded(args);
+	}
+
+	public void AddMapChunk(MapChunk mapChunk, int x, int y)
+	{
+		AddMapChunk(mapChunk, new Point(x, y));
+	}
+
+	public void RemoveMapChunk(MapChunk mapChunk)
+	{
+		UnloadMapChunk(mapChunk);
+
+		foreach (Floor floor in mapChunk.Floors)
+		{
+			AllFloors.Remove(floor);
+		}
+		foreach (Wall wall in mapChunk.Walls)
+		{
+			AllWalls.Remove(wall);
+		}
+		foreach(Actor actor in mapChunk.Actors)
+		{
+			AllActors.Remove(actor);
+		}
+
+		AllMapChunks.Remove(mapChunk);
+
+		Point position = GetMapChunkPosition(mapChunk);
+		m_mapChunks.Remove((position.X, position.Y));
+
+		RemoveChild(mapChunk);
+
+		MapChunkRemovedEventArgs args = new MapChunkRemovedEventArgs();
+		args.MapChunk = mapChunk;
+		OnMapChunkRemoved(args);
+	}
+
+	public void RemoveMapChunk(Point position)
+	{
+		MapChunk mapChunk = GetMapChunk(position);
+		RemoveMapChunk(mapChunk);
+	}
+
+	public void RemoveMapChunk(int x, int y)
+	{
+		RemoveMapChunk(new Point(x, y));
+	}
+
+	public void LoadMapChunk(MapChunk mapChunk)
+	{
+		ActiveMapChunks.Add(mapChunk);
+
+		foreach (Floor floor in mapChunk.Floors)
+		{
+			ActiveFloors.Add(floor);
+		}
+		foreach (Wall wall in mapChunk.Walls)
+		{
+			ActiveWalls.Add(wall);
+		}
+		foreach(Actor actor in mapChunk.Actors)
+		{
+			ActiveActors.Add(actor);
+		}
+
+		MapChunkLoadedEventArgs args = new MapChunkLoadedEventArgs();
+		args.MapChunk = mapChunk;
+		OnMapChunkLoaded(args);
+	}
+
+	public void LoadMapChunk(Point position)
+	{
+		MapChunk mapChunk = GetMapChunk(position);
+		LoadMapChunk(mapChunk);
+	}
+
+	public void LoadMapChunk(int x, int y)
+	{
+		LoadMapChunk(new Point(x, y));
+	}
+
+	public void UnloadMapChunk(MapChunk mapChunk)
+	{
+		ActiveMapChunks.Remove(mapChunk);
+
+		foreach (Floor floor in mapChunk.Floors)
+		{
+			ActiveFloors.Remove(floor);
+		}
+		foreach (Wall wall in mapChunk.Walls)
+		{
+			ActiveWalls.Remove(wall);
+		}
+		foreach (Actor actor in mapChunk.Actors)
+		{
+			ActiveActors.Remove(actor);
+		}
+
+		MapChunkUnloadedEventArgs args = new MapChunkUnloadedEventArgs();
+		args.MapChunk = mapChunk;
+		OnMapChunkUnloaded(args);
+	}
+
+	public void UnloadMapChunk(Point position)
+	{
+		MapChunk mapChunk = GetMapChunk(position);
+		UnloadMapChunk(mapChunk);
+	}
+
+	public void UnloadMapChunk(int x, int y)
+	{
+		UnloadMapChunk(new Point(x, y));
 	}
 
 	#endregion // Public methods
@@ -174,51 +290,33 @@ public class Map : Node2D
 
 	#region Protected methods
 
-	protected virtual void OnFloorAdded(GameObjectAddedEventArgs e)
+	protected virtual void OnMapChunkAdded(MapChunkAddedEventArgs e)
 	{
-		EventHandler<GameObjectAddedEventArgs>? handler = FloorAdded;
+		EventHandler<MapChunkAddedEventArgs>? handler = MapChunkAdded;
 		handler?.Invoke(this, e);
 	}
 
-	protected virtual void OnFloorRemoved(GameObjectRemovedEventArgs e)
+	protected virtual void OnMapChunkRemoved(MapChunkRemovedEventArgs e)
 	{
-		EventHandler<GameObjectRemovedEventArgs>? handler = FloorRemoved;
+		EventHandler<MapChunkRemovedEventArgs>? handler = MapChunkRemoved;
 		handler?.Invoke(this, e);
 	}
 
-	protected virtual void OnWallAdded(GameObjectAddedEventArgs e)
+	protected virtual void OnMapChunkLoaded(MapChunkLoadedEventArgs e)
 	{
-		EventHandler<GameObjectAddedEventArgs>? handler = WallAdded;
+		EventHandler<MapChunkLoadedEventArgs>? handler = MapChunkLoaded;
 		handler?.Invoke(this, e);
 	}
 
-	protected virtual void OnWallRemoved(GameObjectRemovedEventArgs e)
+	protected virtual void OnMapChunkUnloaded(MapChunkUnloadedEventArgs e)
 	{
-		EventHandler<GameObjectRemovedEventArgs>? handler = WallRemoved;
+		EventHandler<MapChunkUnloadedEventArgs>? handler = MapChunkUnloaded;
 		handler?.Invoke(this, e);
 	}
 
-	protected virtual void OnActorAdded(NPCAddedEventArgs e)
+	protected virtual void OnMapChunkLoadDistanceChanged(IntChangedEventArgs e)
 	{
-		EventHandler<NPCAddedEventArgs>? handler = ActorAdded;
-		handler?.Invoke(this, e);
-	}
-
-	protected virtual void OnActorRemoved(NPCRemovedEventArgs e)
-	{
-		EventHandler<NPCRemovedEventArgs>? handler = ActorRemoved;
-		handler?.Invoke(this, e);
-	}
-
-	protected virtual void OnGameObjectAdded(GameObjectAddedEventArgs e)
-	{
-		EventHandler<GameObjectAddedEventArgs>? handler = GameObjectAdded;
-		handler?.Invoke(this, e);
-	}
-
-	protected virtual void OnGameObjectRemoved(GameObjectRemovedEventArgs e)
-	{
-		EventHandler<GameObjectRemovedEventArgs>? handler = GameObjectRemoved;
+		EventHandler<IntChangedEventArgs>? handler = MapChunkLoadDistanceChanged;
 		handler?.Invoke(this, e);
 	}
 

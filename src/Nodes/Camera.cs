@@ -38,8 +38,8 @@ public class Camera : Node2D
 
 	public void CenterOnPosition(Point position)
 	{
-		int x = position.X - (int)(Width / 2f);
-		int y = position.Y - (int)(Height / 2f);
+		int x = position.X - (int)((Width - 1) / 2f);
+		int y = position.Y - (int)((Height - 1) / 2f);
 		SetPosition(x, y);
 	}
 	public void CenterOnPosition(int x, int y)
@@ -49,12 +49,12 @@ public class Camera : Node2D
 
 	public void CenterOnPositionX(int x)
 	{
-		SetPositionX(x - (int)(Width / 2f));
+		SetPositionX(x - (int)((Width - 1) / 2f));
 	}
 
 	public void CenterOnPositionY(int y)
 	{
-		SetPositionY(y - (int)(Height / 2f));
+		SetPositionY(y - (int)((Height - 1) / 2f));
 	}
 
 	public void SetBounds(int left, int right, int up, int down)
@@ -84,40 +84,40 @@ public class Camera : Node2D
 
 	public void ClampToBounds()
 	{
-		int w = (int)MathF.Abs(Bounds.Right - Bounds.Left);
-		int h = (int)MathF.Abs(Bounds.Down - Bounds.Up);
+		int boundsW = (int)MathF.Abs(Bounds.Right - Bounds.Left);
+		int boundsH = (int)MathF.Abs(Bounds.Down - Bounds.Up);
 
-		if (Width < w)
+		if (Width < boundsW)
 		{
 			if (Position.X < Bounds.Left)
 			{
 				SetPositionX(Bounds.Left);
 			}
-			else if (Position.X + Width - 1 > Bounds.Right)
+			else if (Position.X + (Width - 1) > Bounds.Right)
 			{
 				SetPositionX(Bounds.Right - (Width - 1));
 			}
 		}
 		else
 		{
-			int x = Bounds.Left + ((int)(w / 2f));
+			int x = Bounds.Left + ((int)(boundsW / 2f));
 			CenterOnPositionX(x);
 		}
 
-		if (Height < h)
+		if (Height < boundsH)
 		{
 			if (Position.Y < Bounds.Up)
 			{
 				SetPositionY(Bounds.Up);
 			}
-			else if (Position.Y + Height - 1 > Bounds.Down)
+			else if (Position.Y + (Height - 1) > Bounds.Down)
 			{
 				SetPositionY(Bounds.Down - (Height - 1));
 			}
 		}
 		else
 		{
-			int y = Bounds.Up + (int)(h / 2f);
+			int y = Bounds.Up + (int)(boundsH / 2f);
 			CenterOnPositionY(y);
 		}
 	}

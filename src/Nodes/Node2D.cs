@@ -71,7 +71,7 @@ public class Node2D
 
 	public Node2D? Parent { get; set; }
 
-	public List<Node2D> Children { get; init; }
+	public List<Node2D> Children { get; }
 
 	#endregion // Properties
 
@@ -117,6 +117,24 @@ public class Node2D
 		foreach (Node2D node in Children)
 		{
 			node.Init();
+		}
+	}
+
+	public virtual void Ready()
+	{
+		foreach(Node2D node in Children)
+		{
+			node.Ready();
+		}
+	}
+
+	public virtual void Tick() { }
+
+	public virtual void Destroy()
+	{
+		foreach(Node2D node in Children)
+		{
+			node.Destroy();
 		}
 	}
 
@@ -168,13 +186,13 @@ public class Node2D
 	{
 		Node2D? node = Children.Find(_ => _.Name == name);
 
-		if (node == null)
+		if (node != null)
 		{
-			throw new Exception();
+			return node;
 		}
 		else
 		{
-			return node;
+			throw new Exception();
 		}
 	}
 
@@ -209,11 +227,6 @@ public class Node2D
 		OnNodeAdded(args);
 	}
 
-	public void RemoveChild(int index)
-	{
-		RemoveChild(Children[index]);
-	}
-
 	public void RemoveChild(Node2D node)
 	{
 		NodeRemovedEventArgs args = new NodeRemovedEventArgs();
@@ -224,6 +237,11 @@ public class Node2D
 		Children.Remove(node);
 
 		OnNodeRemoved(args);
+	}
+
+	public void RemoveChild(int index)
+	{
+		RemoveChild(Children[index]);
 	}
 
 	#endregion // Public methods

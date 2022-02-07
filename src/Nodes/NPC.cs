@@ -1,4 +1,4 @@
-public class NPC : GameObject
+public class NPC : Actor
 {
 
 	#region Properties
@@ -12,39 +12,31 @@ public class NPC : GameObject
 
 
 
-	#region Fields
-
-	private readonly Random m_rng;
-
-	#endregion // Fields
-
-
-
 	#region Constructors
 
-	public NPC (string name, int x, int y, Random rng) : base(name, x, y, 'N')
+	public NPC (string name, int x, int y, char symbol, Random rng) : base(name, x, y, symbol, rng)
 	{
-		m_rng = rng;
-
 		IsFollowPlayer = false;
 		PlayerSearchDistance = 8;
 		ChanceToDoMove = 50;
 	}
 
-	public NPC (string name, Random rng) : this(name, 0, 0, rng) { }
+	public NPC (string name, char symbol, Random rng) : this(name, 0, 0, symbol, rng) { }
 
-	public NPC (int x, int y, Random rng) : this("NPC", x, y, rng) { }
+	public NPC (int x, int y, char symbol, Random rng) : this("NPC", x, y, symbol, rng) { }
 
-	public NPC (Random rng) : this("NPC", 0, 0, rng) { }
+	public NPC (char symbol, Random rng) : this("NPC", 0, 0, symbol, rng) { }
 
 	#endregion // Constructors
 
 
 
-	#region Public methods
+	#region Actor methods
 
-	public void Tick(Game game)
+	public override void Tick()
 	{
+		Game game = RootNode.GetNode<Game>("Game");
+
 		Point globalPosition = GlobalPosition;
 
 		if (IsFollowPlayer)
@@ -95,7 +87,7 @@ public class NPC : GameObject
 		}
 	}
 
-	#endregion // Public methods
+	#endregion // Actor methods
 
 }
 

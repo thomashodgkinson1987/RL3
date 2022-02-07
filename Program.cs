@@ -7,8 +7,8 @@ class Program
 
 		int screenX = 0;
 		int screenY = 0;
-		int screenW = 63;
-		int screenH = 31;
+		int screenW = 64;
+		int screenH = 32;
 
 		int playerX = 1;
 		int playerY = 1;
@@ -31,13 +31,13 @@ class Program
 
 		//
 
-		MapGroup mapGroup = new MapGroup("Maps");
+		Map map = new Map();
 
-		rootNode.AddChild(mapGroup);
+		rootNode.AddChild(map);
 
 		//
 
-		Player player = new Player(playerX, playerY, 10);
+		Player player = new Player(playerX, playerY, '@', rng);
 
 		rootNode.AddChild(player);
 
