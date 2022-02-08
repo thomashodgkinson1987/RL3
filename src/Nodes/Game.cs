@@ -80,8 +80,6 @@ public class Game : Node2D
 			int down = args.MapChunk.Position.Y + args.MapChunk.Height - 1;
 
 			node_camera.ExpandBoundsTo(left, right, up, down);
-
-			args.MapChunk.IsDirty = true;
 		};
 
 		a_OnMapChunkRemoved = delegate (object? sender, MapChunkRemovedEventArgs args)
@@ -99,8 +97,6 @@ public class Game : Node2D
 			{
 				RecalculateCameraBounds();
 			}
-
-			args.MapChunk.IsDirty = true;
 		};
 
 		a_OnMapChunkLoaded = delegate (object? sender, MapChunkLoadedEventArgs args)
@@ -112,13 +108,12 @@ public class Game : Node2D
 			args.MapChunk.ActorAdded += a_OnActorAddedToMapChunk;
 			args.MapChunk.ActorRemoved += a_OnActorRemovedFromMapChunk;
 
-			args.MapChunk.IsDirty = true;
-
 			node_screen.IsDirty = true;
 			node_floorsScreen.IsDirty = true;
 			node_wallsScreen.IsDirty = true;
 			node_actorsScreen.IsDirty = true;
 			node_playerScreen.IsDirty = true;
+			node_uiScreen.IsDirty = true;
 		};
 
 		a_OnMapChunkUnloaded = delegate (object? sender, MapChunkUnloadedEventArgs args)
@@ -130,13 +125,12 @@ public class Game : Node2D
 			args.MapChunk.ActorAdded -= a_OnActorAddedToMapChunk;
 			args.MapChunk.ActorRemoved -= a_OnActorRemovedFromMapChunk;
 
-			args.MapChunk.IsDirty = true;
-
 			node_screen.IsDirty = true;
 			node_floorsScreen.IsDirty = true;
 			node_wallsScreen.IsDirty = true;
 			node_actorsScreen.IsDirty = true;
 			node_playerScreen.IsDirty = true;
+			node_uiScreen.IsDirty = true;
 		};
 
 		a_OnPlayerPositionChanged = delegate (object? sender, PointChangedEventArgs args)
@@ -145,7 +139,19 @@ public class Game : Node2D
 			node_playerScreen.IsDirty = true;
 			node_uiScreen.IsDirty = true;
 
-			m_currentMapChunk.IsDirty = true;
+			int oldChunkPositionX = (int)(MathF.Floor(args.PointBeforeChange.X / 16f));
+			int oldChunkPositionY = (int)(MathF.Floor(args.PointBeforeChange.Y / 16f));
+			Point oldChunkPosition = new Point(oldChunkPositionX, oldChunkPositionY);
+
+			int newChunkPositionX = (int)(MathF.Floor(args.PointAfterChange.X / 16f));
+			int newChunkPositionY = (int)(MathF.Floor(args.PointAfterChange.Y / 16f));
+			Point newChunkPosition = new Point(newChunkPositionX, newChunkPositionY);
+
+			if (oldChunkPosition != newChunkPosition)
+			{
+				node_map.GetMapChunk(oldChunkPosition).IsDirty = true;
+				node_map.GetMapChunk(newChunkPosition).IsDirty = true;
+			}
 		};
 
 		a_OnPlayerHealthChanged = delegate (object? sender, IntChangedEventArgs args)
@@ -164,6 +170,20 @@ public class Game : Node2D
 		{
 			node_screen.IsDirty = true;
 			node_actorsScreen.IsDirty = true;
+
+			int oldChunkPositionX = (int)(MathF.Floor(args.PointBeforeChange.X / 16f));
+			int oldChunkPositionY = (int)(MathF.Floor(args.PointBeforeChange.Y / 16f));
+			Point oldChunkPosition = new Point(oldChunkPositionX, oldChunkPositionY);
+
+			int newChunkPositionX = (int)(MathF.Floor(args.PointAfterChange.X / 16f));
+			int newChunkPositionY = (int)(MathF.Floor(args.PointAfterChange.Y / 16f));
+			Point newChunkPosition = new Point(newChunkPositionX, newChunkPositionY);
+
+			if (oldChunkPosition != newChunkPosition)
+			{
+				node_map.GetMapChunk(oldChunkPosition).IsDirty = true;
+				node_map.GetMapChunk(newChunkPosition).IsDirty = true;
+			}
 		};
 
 		a_OnCameraPositionChanged = delegate (object? sender, PointChangedEventArgs args)
@@ -171,8 +191,8 @@ public class Game : Node2D
 			node_screen.IsDirty = true;
 			node_floorsScreen.IsDirty = true;
 			node_wallsScreen.IsDirty = true;
-			node_playerScreen.IsDirty = true;
 			node_actorsScreen.IsDirty = true;
+			node_playerScreen.IsDirty = true;
 			node_uiScreen.IsDirty = true;
 		};
 
@@ -271,13 +291,6 @@ public class Game : Node2D
 
 		// Populate and load maps
 
-		List<MapChunk> mapChunks = new List<MapChunk>();
-		mapChunks.Add(StaticMapChunks.GetMapChunk1());
-		mapChunks.Add(StaticMapChunks.GetMapChunk2(m_rng));
-		mapChunks.Add(StaticMapChunks.GetMapChunk3());
-		mapChunks.Add(StaticMapChunks.GetMapChunk4(m_rng));
-		mapChunks.Add(StaticMapChunks.GetMapChunk5(m_rng));
-
 		for (int i = -8; i < 8; i++)
 		{
 			for (int j = -8; j < 8; j++)
@@ -342,40 +355,43 @@ public class Game : Node2D
 		{
 			node_player.Tick(consoleKeyInfo, this);
 
-			int newChunkX = (int)MathF.Floor(node_player.GlobalPosition.X / 16f);
-			int newChunkY = (int)MathF.Floor(node_player.GlobalPosition.Y / 16f);
+			Point oldMapChunkPosition = new Point(m_currentMapChunkPosition.x, m_currentMapChunkPosition.y);
 
-			if (newChunkX != m_currentMapChunkPosition.x || newChunkY != m_currentMapChunkPosition.y)
+			int newMapChunkPositionX = (int)MathF.Floor(node_player.GlobalPosition.X / 16f);
+			int newMapChunkPositionY = (int)MathF.Floor(node_player.GlobalPosition.Y / 16f);
+			Point newMapChunkPosition = new Point(newMapChunkPositionX, newMapChunkPositionY);
+
+			if (oldMapChunkPosition != newMapChunkPosition)
 			{
-				UpdateLoadedMaps(newChunkX, newChunkY);
+				UpdateLoadedMaps(newMapChunkPositionX, newMapChunkPositionY);
 			}
 		}
 
 		foreach (Actor actor in node_map.ActiveActors)
 		{
-			Point previousActorPosition = actor.Position;
-			Point previousActorGlobalPosition = actor.GlobalPosition;
-			int previousMapChunkX = (int)MathF.Floor(previousActorGlobalPosition.X / 16f);
-			int previousMapChunkY = (int)MathF.Floor(previousActorGlobalPosition.Y / 16f);
-			Point previousMapChunkPosition = new Point(previousMapChunkX, previousMapChunkY);
+			Point oldActorPosition = actor.Position;
+			Point oldActorGlobalPosition = actor.GlobalPosition;
+			int oldMapChunkPositionX = (int)MathF.Floor(oldActorGlobalPosition.X / 16f);
+			int oldMapChunkPositionY = (int)MathF.Floor(oldActorGlobalPosition.Y / 16f);
+			Point oldMapChunkPosition = new Point(oldMapChunkPositionX, oldMapChunkPositionY);
 
 			actor.Tick();
 
 			Point newActorPosition = actor.Position;
 			Point newActorGlobalPosition = actor.GlobalPosition;
-			int newMapChunkX = (int)MathF.Floor(newActorGlobalPosition.X / 16f);
-			int newMapChunkY = (int)MathF.Floor(newActorGlobalPosition.Y / 16f);
-			Point newMapChunkPosition = new Point(newMapChunkX, newMapChunkY);
+			int newMapChunkPositionX = (int)MathF.Floor(newActorGlobalPosition.X / 16f);
+			int newMapChunkPositionY = (int)MathF.Floor(newActorGlobalPosition.Y / 16f);
+			Point newMapChunkPosition = new Point(newMapChunkPositionX, newMapChunkPositionY);
 
-			if (previousMapChunkPosition != newMapChunkPosition)
+			if (oldMapChunkPosition != newMapChunkPosition)
 			{
-				MapChunk previousMapChunk = node_map.GetMapChunk(previousMapChunkPosition);
+				MapChunk oldMapChunk = node_map.GetMapChunk(oldMapChunkPosition);
 				MapChunk newMapChunk = node_map.GetMapChunk(newMapChunkPosition);
 
-				int dirX = previousMapChunkX < newMapChunkX ? 1 : previousMapChunkX > newMapChunkX ? -1 : 0;
-				int dirY = previousMapChunkY < newMapChunkY ? 1 : previousMapChunkY > newMapChunkY ? -1 : 0;
+				int dirX = oldMapChunkPositionX < newMapChunkPositionX ? 1 : oldMapChunkPositionX > newMapChunkPositionX ? -1 : 0;
+				int dirY = oldMapChunkPositionY < newMapChunkPositionY ? 1 : oldMapChunkPositionY > newMapChunkPositionY ? -1 : 0;
 
-				previousMapChunk.RemoveActor(actor);
+				oldMapChunk.RemoveActor(actor);
 
 				int _x = dirX == -1 ? 15 : dirX == 1 ? 0 : actor.Position.X;
 				int _y = dirY == -1 ? 15 : dirY == 1 ? 0 : actor.Position.Y;
@@ -395,96 +411,95 @@ public class Game : Node2D
 		{
 			node_screen.IsDirty = false;
 			node_screen.Clear();
-		}
 
-		if (node_floorsScreen.IsDirty || node_wallsScreen.IsDirty || node_actorsScreen.IsDirty)
-		{
-			bool wasFloorsScreenDirty = node_floorsScreen.IsDirty;
-			bool wasWallsScreenDirty = node_wallsScreen.IsDirty;
-			bool wasActorsScreenDirty = node_actorsScreen.IsDirty;
+			if (node_floorsScreen.IsDirty || node_wallsScreen.IsDirty || node_actorsScreen.IsDirty)
+			{
+				bool wasFloorsScreenDirty = node_floorsScreen.IsDirty;
+				bool wasWallsScreenDirty = node_wallsScreen.IsDirty;
+				bool wasActorsScreenDirty = node_actorsScreen.IsDirty;
 
-			if (node_floorsScreen.IsDirty)
-			{
-				node_floorsScreen.IsDirty = false;
-				node_floorsScreen.Clear();
-			}
-			if (node_wallsScreen.IsDirty)
-			{
-				node_wallsScreen.IsDirty = false;
-				node_wallsScreen.Clear();
-			}
-			if (node_actorsScreen.IsDirty)
-			{
-				node_actorsScreen.IsDirty = false;
-				node_actorsScreen.Clear();
-			}
-
-			foreach (MapChunk mapChunk in node_map.ActiveMapChunks)
-			{
-				Point globalPosition = mapChunk.GlobalPosition - node_camera.GlobalPosition;
-
-				if (wasFloorsScreenDirty)
+				if (node_floorsScreen.IsDirty)
 				{
-					foreach (Floor floor in mapChunk.Floors)
-					{
-						if (!floor.IsVisible) continue;
+					node_floorsScreen.IsDirty = false;
+					node_floorsScreen.Clear();
+				}
+				if (node_wallsScreen.IsDirty)
+				{
+					node_wallsScreen.IsDirty = false;
+					node_wallsScreen.Clear();
+				}
+				if (node_actorsScreen.IsDirty)
+				{
+					node_actorsScreen.IsDirty = false;
+					node_actorsScreen.Clear();
+				}
 
-						Point floorGlobalPosition = globalPosition + floor.Position;
-						if (node_floorsScreen.IsPositionOnScreen(floorGlobalPosition))
+				foreach (MapChunk mapChunk in node_map.ActiveMapChunks)
+				{
+					Point globalPosition = mapChunk.GlobalPosition - node_camera.GlobalPosition;
+
+					if (wasFloorsScreenDirty)
+					{
+						foreach (Floor floor in mapChunk.Floors)
 						{
-							node_floorsScreen.SetSymbol(floorGlobalPosition, floor.Symbol);
+							if (!floor.IsVisible) continue;
+
+							Point floorGlobalPosition = globalPosition + floor.Position;
+							if (node_floorsScreen.IsPositionOnScreen(floorGlobalPosition))
+							{
+								node_floorsScreen.SetSymbol(floorGlobalPosition, floor.Symbol);
+							}
+						}
+					}
+					if (wasWallsScreenDirty)
+					{
+						foreach (Wall wall in mapChunk.Walls)
+						{
+							if (!wall.IsVisible) continue;
+
+							Point wallGlobalPosition = globalPosition + wall.Position;
+							if (node_wallsScreen.IsPositionOnScreen(wallGlobalPosition))
+							{
+								node_wallsScreen.SetSymbol(wallGlobalPosition, wall.Symbol);
+							}
+						}
+					}
+					if (wasActorsScreenDirty)
+					{
+						foreach (Actor actor in mapChunk.Actors)
+						{
+							if (!actor.IsVisible) continue;
+
+							Point actorGlobalPosition = globalPosition + actor.Position;
+							if (node_actorsScreen.IsPositionOnScreen(actorGlobalPosition))
+							{
+								node_actorsScreen.SetSymbol(actorGlobalPosition, actor.Symbol);
+							}
 						}
 					}
 				}
-
-				if (wasWallsScreenDirty)
-				{
-					foreach (Wall wall in mapChunk.Walls)
-					{
-						if (!wall.IsVisible) continue;
-
-						Point wallGlobalPosition = globalPosition + wall.Position;
-						if (node_wallsScreen.IsPositionOnScreen(wallGlobalPosition))
-						{
-							node_wallsScreen.SetSymbol(wallGlobalPosition, wall.Symbol);
-						}
-					}
-				}
-
-				if (wasActorsScreenDirty)
-				{
-					foreach (Actor actor in mapChunk.Actors)
-					{
-						if (!actor.IsVisible) continue;
-
-						Point actorGlobalPosition = globalPosition + actor.Position;
-						if (node_actorsScreen.IsPositionOnScreen(actorGlobalPosition))
-						{
-							node_actorsScreen.SetSymbol(actorGlobalPosition, actor.Symbol);
-						}
-					}
-				}
 			}
-		}
 
-		if (node_playerScreen.IsDirty)
-		{
-			node_playerScreen.IsDirty = false;
-			node_playerScreen.Clear();
-			if (node_player.IsVisible)
+			if (node_playerScreen.IsDirty)
 			{
-				Point playerGlobalPosition = node_player.GlobalPosition - node_camera.GlobalPosition;
-				if (node_playerScreen.IsPositionOnScreen(playerGlobalPosition))
+				node_playerScreen.IsDirty = false;
+				node_playerScreen.Clear();
+
+				if (node_player.IsVisible)
 				{
-					node_playerScreen.SetSymbol(playerGlobalPosition, node_player.Symbol);
+					Point playerGlobalPosition = node_player.GlobalPosition - node_camera.GlobalPosition;
+					if (node_playerScreen.IsPositionOnScreen(playerGlobalPosition))
+					{
+						node_playerScreen.SetSymbol(playerGlobalPosition, node_player.Symbol);
+					}
 				}
 			}
-		}
 
-		if (node_uiScreen.IsDirty)
-		{
-			node_uiScreen.IsDirty = false;
-			UpdateUI();
+			if (node_uiScreen.IsDirty)
+			{
+				node_uiScreen.IsDirty = false;
+				UpdateUI();
+			}
 		}
 
 		if (node_screens.IsVisible && node_screen.IsVisible)
@@ -507,6 +522,7 @@ public class Game : Node2D
 		foreach (MapChunk mapChunk in node_map.ActiveMapChunks)
 		{
 			Point globalPosition = mapChunk.GlobalPosition;
+
 			foreach (Floor floor in mapChunk.Floors)
 			{
 				Point floorGlobalPosition = floor.Position + globalPosition;
@@ -534,6 +550,7 @@ public class Game : Node2D
 					break;
 				}
 			}
+
 			if (isFloor && isWall && isActor) break;
 		}
 
@@ -551,7 +568,7 @@ public class Game : Node2D
 
 	#region Private methods
 
-	private void UpdateLoadedMaps(int mapChunkX, int mapChunkY)
+	private void UpdateLoadedMaps(int mapChunkPositionX, int mapChunkPositionY)
 	{
 		node_screen.IsDirty = true;
 		node_floorsScreen.IsDirty = true;
@@ -560,31 +577,31 @@ public class Game : Node2D
 		node_playerScreen.IsDirty = true;
 		node_uiScreen.IsDirty = true;
 
-		m_currentMapChunkPosition = (mapChunkX, mapChunkY);
+		m_currentMapChunkPosition = (mapChunkPositionX, mapChunkPositionY);
 		m_currentMapChunk = node_map.GetMapChunk(m_currentMapChunkPosition.x, m_currentMapChunkPosition.y);
 
-		(int x, int y) chunk = (mapChunkX, mapChunkY);
+		(int x, int y) _chunk = (mapChunkPositionX, mapChunkPositionY);
 
 		for (int i = -1; i >= -node_map.MapChunkLoadDistance; i--)
 		{
-			if (!node_map.IsMapChunkAtPosition(mapChunkX + i, mapChunkY))
+			if (!node_map.IsMapChunkAtPosition(mapChunkPositionX + i, mapChunkPositionY))
 			{
-				chunk.x += 1;
+				_chunk.x += 1;
 			}
-			if (!node_map.IsMapChunkAtPosition(mapChunkX, mapChunkY + i))
+			if (!node_map.IsMapChunkAtPosition(mapChunkPositionX, mapChunkPositionY + i))
 			{
-				chunk.y += 1;
+				_chunk.y += 1;
 			}
 		}
 		for (int i = 1; i <= node_map.MapChunkLoadDistance; i++)
 		{
-			if (!node_map.IsMapChunkAtPosition(mapChunkX + i, mapChunkY))
+			if (!node_map.IsMapChunkAtPosition(mapChunkPositionX + i, mapChunkPositionY))
 			{
-				chunk.x -= 1;
+				_chunk.x -= 1;
 			}
-			if (!node_map.IsMapChunkAtPosition(mapChunkX, mapChunkY + i))
+			if (!node_map.IsMapChunkAtPosition(mapChunkPositionX, mapChunkPositionY + i))
 			{
-				chunk.y -= 1;
+				_chunk.y -= 1;
 			}
 		}
 
@@ -594,10 +611,12 @@ public class Game : Node2D
 		{
 			for (int j = -node_map.MapChunkLoadDistance; j <= node_map.MapChunkLoadDistance; j++)
 			{
-				int x = chunk.x + j;
-				int y = chunk.y + i;
+				int x = _chunk.x + j;
+				int y = _chunk.y + i;
 				MapChunk mapChunk = node_map.GetMapChunk(x, y);
+
 				newMapChunks.Add(mapChunk);
+
 				if (!node_map.IsMapChunkLoaded(mapChunk))
 				{
 					node_map.LoadMapChunk(mapChunk);
@@ -608,6 +627,7 @@ public class Game : Node2D
 		for (int i = 0; i < node_map.ActiveMapChunks.Count; i++)
 		{
 			MapChunk mapChunk = node_map.ActiveMapChunks[i];
+
 			if (!newMapChunks.Contains(mapChunk))
 			{
 				node_map.UnloadMapChunk(mapChunk);

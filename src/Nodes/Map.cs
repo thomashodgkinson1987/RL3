@@ -168,6 +168,8 @@ public class Map : Node2D
 
 		AddChild(mapChunk);
 
+		mapChunk.IsDirty = true;
+
 		MapChunkAddedEventArgs args = new MapChunkAddedEventArgs();
 		args.MapChunk = mapChunk;
 		OnMapChunkAdded(args);
@@ -202,6 +204,8 @@ public class Map : Node2D
 
 		RemoveChild(mapChunk);
 
+		mapChunk.IsDirty = true;
+
 		MapChunkRemovedEventArgs args = new MapChunkRemovedEventArgs();
 		args.MapChunk = mapChunk;
 		OnMapChunkRemoved(args);
@@ -235,6 +239,8 @@ public class Map : Node2D
 			ActiveActors.Add(actor);
 		}
 
+		mapChunk.IsDirty = true;
+
 		MapChunkLoadedEventArgs args = new MapChunkLoadedEventArgs();
 		args.MapChunk = mapChunk;
 		OnMapChunkLoaded(args);
@@ -267,6 +273,8 @@ public class Map : Node2D
 		{
 			ActiveActors.Remove(actor);
 		}
+
+		mapChunk.IsDirty = true;
 
 		MapChunkUnloadedEventArgs args = new MapChunkUnloadedEventArgs();
 		args.MapChunk = mapChunk;

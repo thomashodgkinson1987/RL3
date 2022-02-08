@@ -84,6 +84,8 @@ public class MapChunk : Node2D
 		Floors.Add(floor);
 		node_floors.AddChild(floor);
 
+		IsDirty = true;
+
 		GameObjectAddedEventArgs args1 = new GameObjectAddedEventArgs();
 		args1.GameObject = floor;
 		OnGameObjectAdded(args1);
@@ -103,6 +105,8 @@ public class MapChunk : Node2D
 		Floors.Remove(floor);
 		node_floors.RemoveChild(floor);
 
+		IsDirty = true;
+
 		GameObjectRemovedEventArgs args1 = new GameObjectRemovedEventArgs();
 		args1.GameObject = floor;
 		OnGameObjectRemoved(args1);
@@ -117,6 +121,8 @@ public class MapChunk : Node2D
 		wall.SetPosition(position);
 		Walls.Add(wall);
 		node_walls.AddChild(wall);
+
+		IsDirty = true;
 
 		GameObjectAddedEventArgs args1 = new GameObjectAddedEventArgs();
 		args1.GameObject = wall;
@@ -137,6 +143,8 @@ public class MapChunk : Node2D
 		Walls.Remove(wall);
 		node_walls.RemoveChild(wall);
 
+		IsDirty = true;
+
 		GameObjectRemovedEventArgs args1 = new GameObjectRemovedEventArgs();
 		args1.GameObject = wall;
 		OnGameObjectRemoved(args1);
@@ -151,6 +159,8 @@ public class MapChunk : Node2D
 		actor.SetPosition(position);
 		Actors.Add(actor);
 		node_actors.AddChild(actor);
+
+		IsDirty = true;
 
 		GameObjectAddedEventArgs args1 = new GameObjectAddedEventArgs();
 		args1.GameObject = actor;
@@ -170,6 +180,8 @@ public class MapChunk : Node2D
 	{
 		Actors.Remove(actor);
 		node_actors.RemoveChild(actor);
+
+		IsDirty = true;
 
 		GameObjectRemovedEventArgs args1 = new GameObjectRemovedEventArgs();
 		args1.GameObject = actor;
