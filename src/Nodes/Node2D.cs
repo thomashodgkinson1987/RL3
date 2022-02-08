@@ -130,14 +130,6 @@ public class Node2D
 
 	public virtual void Tick() { }
 
-	public virtual void Destroy()
-	{
-		foreach(Node2D node in Children)
-		{
-			node.Destroy();
-		}
-	}
-
 	public void SetPosition(Point position)
 	{
 		Position = position;

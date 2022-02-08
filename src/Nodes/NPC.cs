@@ -43,7 +43,7 @@ public class NPC : Actor
 		{
 			if (m_rng.Next(0, 100) <= ChanceToDoMove)
 			{
-				Player player = RootNode.GetNode<Player>("Player");
+				Player player = game.GetNode<Player>("Player");
 				Point playerGlobalPosition = player.GlobalPosition;
 				if (MathF.Abs(playerGlobalPosition.X - globalPosition.X) <= PlayerSearchDistance && MathF.Abs(playerGlobalPosition.Y - globalPosition.Y) <= PlayerSearchDistance)
 				{

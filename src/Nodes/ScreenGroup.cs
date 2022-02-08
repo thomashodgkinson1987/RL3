@@ -40,22 +40,6 @@ public class ScreenGroup : Node2D
 				AddScreen(screen);
 			}
 		}
-
-		NodeAdded += delegate (object? sender, NodeAddedEventArgs e)
-		{
-			if (e.Node is Screen screen)
-			{
-				AddScreen(screen);
-			}
-		};
-
-		NodeRemoved += delegate (object? sender, NodeRemovedEventArgs e)
-		{
-			if (e.Node is Screen screen)
-			{
-				RemoveScreen(screen);
-			}
-		};
 	}
 
 	#endregion // Node2D methods

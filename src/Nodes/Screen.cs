@@ -43,7 +43,7 @@ public class Screen : Node2D
 
 	public Screen(int width, int height) : this("Screen", 0, 0, width, height) { }
 
-	public Screen() : this(64, 32) { }
+	public Screen() : this(92, 38) { }
 
 	#endregion // Constructors
 
