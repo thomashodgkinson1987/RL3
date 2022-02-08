@@ -558,40 +558,66 @@ public class Game : Node2D
 		bool isPlayer = position == node_player.GlobalPosition;
 		bool isActor = false;
 
-		foreach (MapChunk mapChunk in node_map.ActiveMapChunks)
+		void ProcessChunk(object? obj)
 		{
-			Point globalPosition = mapChunk.GlobalPosition;
+			if (obj != null && obj is MapChunk mapChunk)
+			{
+				Point globalPosition = mapChunk.GlobalPosition;
 
-			foreach (Floor floor in mapChunk.Floors)
-			{
-				Point floorGlobalPosition = floor.Position + globalPosition;
-				if (position == floorGlobalPosition)
+				foreach (Floor floor in mapChunk.Floors)
 				{
-					isFloor = true;
-					break;
+					Point floorGlobalPosition = floor.Position + globalPosition;
+					if (position == floorGlobalPosition)
+					{
+						isFloor = true;
+						break;
+					}
+				}
+				foreach (Wall wall in mapChunk.Walls)
+				{
+					Point wallGlobalPosition = wall.Position + globalPosition;
+					if (position == wallGlobalPosition)
+					{
+						isWall = true;
+						break;
+					}
+				}
+				foreach (Actor actor in mapChunk.Actors)
+				{
+					Point actorGlobalPosition = actor.Position + globalPosition;
+					if (position == actorGlobalPosition)
+					{
+						isActor = true;
+						break;
+					}
 				}
 			}
-			foreach (Wall wall in mapChunk.Walls)
-			{
-				Point wallGlobalPosition = wall.Position + globalPosition;
-				if (position == wallGlobalPosition)
-				{
-					isWall = true;
-					break;
-				}
-			}
-			foreach (Actor actor in mapChunk.Actors)
-			{
-				Point actorGlobalPosition = actor.Position + globalPosition;
-				if (position == actorGlobalPosition)
-				{
-					isActor = true;
-					break;
-				}
-			}
-
-			if (isFloor && isWall && isActor) break;
 		}
+
+		System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+		sw.Start();
+
+		int count = node_map.ActiveMapChunks.Count;
+
+		using (ManualResetEvent resetEvent = new ManualResetEvent(false))
+		{
+			for (int i = 0; i < node_map.ActiveMapChunks.Count; i++)
+			{
+				ThreadPool.QueueUserWorkItem(new WaitCallback(x => {
+								ProcessChunk(x);
+								if (Interlocked.Decrement(ref count) == 0)
+								{
+									resetEvent.Set();
+								}
+							}), node_map.ActiveMapChunks[i]);
+			}
+
+			resetEvent.WaitOne();
+		}
+
+		sw.Stop();
+
+		File.AppendAllText("timelog.txt", sw.Elapsed.ToString() + "\n");
 
 		return isFloor && !isWall && !isPlayer && !isActor;
 	}
