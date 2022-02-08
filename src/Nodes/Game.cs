@@ -499,8 +499,6 @@ public class Game : Node2D
 					}
 				}
 
-				System.Diagnostics.Stopwatch sw = System.Diagnostics.Stopwatch.StartNew();
-
 				int count = node_map.ActiveMapChunks.Count;
 
 				using (ManualResetEvent resetEvent = new ManualResetEvent(false))
@@ -519,10 +517,6 @@ public class Game : Node2D
 					
 					resetEvent.WaitOne();
 				}
-
-				sw.Stop();
-
-				File.AppendAllText("timelog.txt", sw.Elapsed.ToString() + "\n");
 			}
 
 			if (node_playerScreen.IsDirty)
