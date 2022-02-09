@@ -150,7 +150,6 @@ public class Map : Node2D
 		mapChunk.SetPosition(x, y);
 
 		m_mapChunks.Add((position.X, position.Y), mapChunk);
-
 		AllMapChunks.Add(mapChunk);
 
 		foreach (Floor floor in mapChunk.Floors)
@@ -192,7 +191,7 @@ public class Map : Node2D
 		{
 			AllWalls.Remove(wall);
 		}
-		foreach(Actor actor in mapChunk.Actors)
+		foreach (Actor actor in mapChunk.Actors)
 		{
 			AllActors.Remove(actor);
 		}
@@ -234,7 +233,7 @@ public class Map : Node2D
 		{
 			ActiveWalls.Add(wall);
 		}
-		foreach(Actor actor in mapChunk.Actors)
+		foreach (Actor actor in mapChunk.Actors)
 		{
 			ActiveActors.Add(actor);
 		}
