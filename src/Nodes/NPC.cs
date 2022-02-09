@@ -5,27 +5,32 @@ public class NPC : Actor
 
 	public bool IsFollowPlayer { get; set; }
 	public int PlayerSearchDistance { get; set; }
-
 	public int ChanceToDoMove { get; set; }
 
 	#endregion // Properties
 
 
 
+	#region Fields
+
+	private readonly Random m_rng;
+
+	#endregion // Fields
+
+
+
 	#region Constructors
 
-	public NPC (string name, int x, int y, char symbol, Random rng) : base(name, x, y, symbol, rng)
+	public NPC (int x, int y, Random rng) : base("NPC", x, y, 'N')
 	{
+		m_rng = rng;
+
 		IsFollowPlayer = false;
 		PlayerSearchDistance = 8;
 		ChanceToDoMove = 50;
 	}
 
-	public NPC (string name, char symbol, Random rng) : this(name, 0, 0, symbol, rng) { }
-
-	public NPC (int x, int y, char symbol, Random rng) : this("NPC", x, y, symbol, rng) { }
-
-	public NPC (char symbol, Random rng) : this("NPC", 0, 0, symbol, rng) { }
+	public NPC (Random rng) : this(0, 0, rng) { }
 
 	#endregion // Constructors
 
@@ -35,7 +40,7 @@ public class NPC : Actor
 
 	public override void Tick()
 	{
-		Game game = RootNode.GetNode<Game>("Game");
+		Game game = RootNode.Instance.GetNode<Game>("Game");
 
 		Point globalPosition = GlobalPosition;
 

@@ -7,14 +7,11 @@ class Program
 
 		Random rng = new Random();
 
-		Node2D rootNode = new Node2D("RootNode");
-		rootNode.RootNode.Init();
-
 		Game game = new Game("Game", rng);
-		rootNode.AddChild(game);
+		RootNode.Instance.AddChild(game);
 
-		rootNode.Init();
-		rootNode.Ready();
+		RootNode.Instance.Init();
+		RootNode.Instance.Ready();
 
 		while (true)
 		{

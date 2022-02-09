@@ -3,16 +3,6 @@ public class Node2D
 
 	#region Properties
 
-	private static Node2D? _rootNode = null;
-	public Node2D RootNode
-	{
-		get
-		{
-			if (_rootNode == null) _rootNode = this;
-			return _rootNode;
-		}
-	}
-
 	private string _name;
 	public string Name
 	{
@@ -122,7 +112,7 @@ public class Node2D
 
 	public virtual void Ready()
 	{
-		foreach(Node2D node in Children)
+		foreach (Node2D node in Children)
 		{
 			node.Ready();
 		}

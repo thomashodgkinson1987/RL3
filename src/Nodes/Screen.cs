@@ -13,10 +13,10 @@ public class Screen : Node2D
 
 	#region Properties
 
-	public int Width { get; protected set; }
-	public int Height { get; protected set; }
+	public int Width { get; }
+	public int Height { get; }
 
-	public char[,] Pixels { get; protected set; }
+	public char[,] Pixels { get; }
 
 	public char ClearSymbol { get; set; } = ' ';
 
