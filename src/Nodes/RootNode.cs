@@ -16,6 +16,8 @@ public sealed class RootNode : Node2D
 		}
 	}
 
+	public bool IsQuit { get; set; }
+
 	#endregion // Properties
 
 
@@ -25,6 +27,17 @@ public sealed class RootNode : Node2D
 	RootNode () { }
 
 	#endregion // Constructors
+
+
+
+	#region Public methods
+
+	public void Quit ()
+	{
+		IsQuit = true;
+	}
+
+	#endregion // Public methods
 
 }
 

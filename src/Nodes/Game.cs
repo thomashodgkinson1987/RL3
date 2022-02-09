@@ -3,19 +3,20 @@ public class Game : Node2D
 
 	#region Nodes
 
-	private Map node_map;
+	private readonly Map node_map;
 
-	private Player node_player;
+	private readonly Player node_player;
 
-	private Screen node_screen;
+	private readonly Screen node_screen;
 
-	private Window node_window_map;
-	private Window node_window_attributes;
-	private Window node_window_messages;
-	private Window node_window_menu;
-	private Window node_window_status;
+	private readonly TitleWindow node_window_title;
+	private readonly MapWindow node_window_map;
+	private readonly AttributesWindow node_window_attributes;
+	private readonly MessagesWindow node_window_messages;
+	private readonly MenuWindow node_window_menu;
+	private readonly StatusWindow node_window_status;
 
-	private Camera node_camera;
+	private readonly Camera node_camera;
 
 	#endregion // Nodes
 
@@ -26,7 +27,7 @@ public class Game : Node2D
 	public Map Map => node_map;
 	public Player Player => node_player;
 	public Camera Camera => node_camera;
-	public int Steps => m_steps;
+	public int Steps { get; set; }
 	public Point CurrentMapChunkPosition
 	{
 		get
@@ -37,6 +38,8 @@ public class Game : Node2D
 			return point;
 		}
 	}
+	public int ActiveWindowIndex { get; set; }
+	public List<Window> Windows { get; }
 
 	#endregion // Properties
 
@@ -78,10 +81,6 @@ public class Game : Node2D
 
 	private (int x, int y) m_currentMapChunkPosition;
 
-	private int m_steps;
-
-	private readonly List<Window> m_windows;
-
 	private EventHandler<MapChunkAddedEventArgs>? a_OnMapChunkAdded;
 	private EventHandler<MapChunkRemovedEventArgs>? a_OnMapChunkRemoved;
 	private EventHandler<MapChunkLoadedEventArgs>? a_OnMapChunkLoaded;
@@ -89,10 +88,8 @@ public class Game : Node2D
 
 	private EventHandler<FloorAddedEventArgs>? a_OnFloorAddedToMapChunk;
 	private EventHandler<FloorRemovedEventArgs>? a_OnFloorRemovedFromMapChunk;
-
 	private EventHandler<WallAddedEventArgs>? a_OnWallAddedToMapChunk;
 	private EventHandler<WallRemovedEventArgs>? a_OnWallRemovedFromMapChunk;
-
 	private EventHandler<ActorAddedEventArgs>? a_OnActorAddedToMapChunk;
 	private EventHandler<ActorRemovedEventArgs>? a_OnActorRemovedFromMapChunk;
 
@@ -101,8 +98,29 @@ public class Game : Node2D
 	private EventHandler<IntChangedEventArgs>? a_OnPlayerMaxHealthChanged;
 
 	private EventHandler<PointChangedEventArgs>? a_OnActorPositionChanged;
-
 	private EventHandler<PointChangedEventArgs>? a_OnCameraPositionChanged;
+
+	private EventHandler? a_OnStartGameButtonSelected;
+	private EventHandler? a_OnStartGameButtonUnselected;
+	private EventHandler? a_OnStartGameButtonPressed;
+
+	private EventHandler? a_OnDeleteGameButtonSelected;
+	private EventHandler? a_OnDeleteGameButtonUnselected;
+	private EventHandler? a_OnDeleteGameButtonPressed;
+
+	private EventHandler? a_OnTutorialButtonSelected;
+	private EventHandler? a_OnTutorialButtonUnselected;
+	private EventHandler? a_OnTutorialButtonPressed;
+
+	private EventHandler? a_OnOptionsButtonSelected;
+	private EventHandler? a_OnOptionsButtonUnselected;
+	private EventHandler? a_OnOptionsButtonPressed;
+
+	private EventHandler? a_OnExitGameButtonSelected;
+	private EventHandler? a_OnExitGameButtonUnselected;
+	private EventHandler? a_OnExitGameButtonPressed;
+
+	private EventHandler? a_OnPressedEscape;
 
 	#endregion // Fields
 
@@ -110,7 +128,7 @@ public class Game : Node2D
 
 	#region Constructors
 
-	public Game (string name, int x, int y, Random rng) : base(name, x, y)
+	public Game(string name, int x, int y, Random rng) : base(name, x, y)
 	{
 		node_map = new Map();
 
@@ -124,12 +142,16 @@ public class Game : Node2D
 
 		AddChild(node_screen);
 
+		node_window_title = new TitleWindow(WINDOW_MAP_X, WINDOW_MAP_Y, WINDOW_MAP_W, WINDOW_MAP_H, Window.EBorderStyle.DashedPlus);
 		node_window_map = new MapWindow(WINDOW_MAP_X, WINDOW_MAP_Y, this, WINDOW_MAP_W, WINDOW_MAP_H, Window.EBorderStyle.DashedPlus);
 		node_window_attributes = new AttributesWindow(WINDOW_ATTRIBUTES_X, WINDOW_ATTRIBUTES_Y, this, WINDOW_ATTRIBUTES_W, WINDOW_ATTRIBUTES_H, Window.EBorderStyle.DashedPlus);
 		node_window_messages = new MessagesWindow(WINDOW_MESSAGES_X, WINDOW_MESSAGES_Y, this, WINDOW_MESSAGES_W, WINDOW_MESSAGES_H, Window.EBorderStyle.DashedPlus);
-		node_window_menu = new MenuWindow(WINDOW_MENU_X, WINDOW_MENU_Y, this, WINDOW_MENU_W, WINDOW_MENU_H, Window.EBorderStyle.DashedPlus);
+		node_window_menu = new MenuWindow(WINDOW_MENU_X, WINDOW_MENU_Y, WINDOW_MENU_W, WINDOW_MENU_H, Window.EBorderStyle.DashedPlus);
 		node_window_status = new StatusWindow(WINDOW_STATUS_X, WINDOW_STATUS_Y, this, WINDOW_STATUS_W, WINDOW_STATUS_H, Window.EBorderStyle.DashedPlus);
 
+		node_window_map.IsVisible = false;
+
+		AddChild(node_window_title);
 		AddChild(node_window_map);
 		AddChild(node_window_attributes);
 		AddChild(node_window_messages);
@@ -141,24 +163,29 @@ public class Game : Node2D
 		AddChild(node_camera);
 
 		m_rng = rng;
-		m_currentMapChunkPosition = (0, 0);
-		m_steps = 0;
 
-		m_windows = new List<Window>()
+		m_currentMapChunkPosition = (0, 0);
+
+		Steps = 0;
+
+		Windows = new List<Window>()
 		{
+			node_window_title,
 			node_window_map,
 			node_window_attributes,
 			node_window_messages,
 			node_window_menu,
 			node_window_status
 		};
+
+		ActiveWindowIndex = 4;
 	}
 
-	public Game (string name, Random rng) : this(name, 0, 0, rng) { }
+	public Game(string name, Random rng) : this(name, 0, 0, rng) { }
 
-	public Game (int x, int y, Random rng) : this("Game", x, y, rng) { }
+	public Game(int x, int y, Random rng) : this("Game", x, y, rng) { }
 
-	public Game (Random rng) : this("Game", 0, 0, rng) { }
+	public Game(Random rng) : this("Game", 0, 0, rng) { }
 
 	#endregion // Constructors
 
@@ -166,35 +193,25 @@ public class Game : Node2D
 
 	#region Node2D methods
 
-	public override void Init ()
+	public override void Init()
 	{
 		base.Init();
 
 		a_OnMapChunkAdded = delegate (object? sender, MapChunkAddedEventArgs args)
 		{
-			int left = args.MapChunk.Position.X;
-			int right = args.MapChunk.Position.X + args.MapChunk.Width - 1;
-			int up = args.MapChunk.Position.Y;
-			int down = args.MapChunk.Position.Y + args.MapChunk.Height - 1;
+			Point globalPosition = args.MapChunk.GlobalPosition;
+
+			int left = globalPosition.X;
+			int right = globalPosition.X + args.MapChunk.Width - 1;
+			int up = globalPosition.Y;
+			int down = globalPosition.Y + args.MapChunk.Height - 1;
 
 			node_camera.ExpandBoundsTo(left, right, up, down);
 		};
 
 		a_OnMapChunkRemoved = delegate (object? sender, MapChunkRemovedEventArgs args)
 		{
-			Point position = node_map.GetMapChunkPosition(args.MapChunk);
-			int width = args.MapChunk.Width;
-			int height = args.MapChunk.Height;
-
-			int left = node_camera.Bounds.Left;
-			int right = node_camera.Bounds.Right;
-			int up = node_camera.Bounds.Up;
-			int down = node_camera.Bounds.Down;
-
-			if (position.X == left || position.X + width - 1 == right || position.Y == up || position.Y + height - 1 == down)
-			{
-				RecalculateCameraBounds();
-			}
+			RecalculateCameraBounds();
 		};
 
 		a_OnMapChunkLoaded = delegate (object? sender, MapChunkLoadedEventArgs args)
@@ -227,10 +244,6 @@ public class Game : Node2D
 
 		a_OnPlayerPositionChanged = delegate (object? sender, PointChangedEventArgs args)
 		{
-			node_screen.IsDirty = true;
-			node_window_map.IsDirty = true;
-			node_window_messages.IsDirty = true;
-
 			int oldChunkPositionX = (int)(MathF.Floor(args.PointBeforeChange.X / 16f));
 			int oldChunkPositionY = (int)(MathF.Floor(args.PointBeforeChange.Y / 16f));
 			Point oldChunkPosition = new Point(oldChunkPositionX, oldChunkPositionY);
@@ -244,6 +257,10 @@ public class Game : Node2D
 				node_map.GetMapChunk(oldChunkPosition).IsDirty = true;
 				node_map.GetMapChunk(newChunkPosition).IsDirty = true;
 			}
+
+			node_screen.IsDirty = true;
+			node_window_map.IsDirty = true;
+			node_window_messages.IsDirty = true;
 		};
 
 		a_OnPlayerHealthChanged = delegate (object? sender, IntChangedEventArgs args)
@@ -325,6 +342,70 @@ public class Game : Node2D
 			node_window_map.IsDirty = true;
 		};
 
+		a_OnStartGameButtonSelected = delegate (object? sender, EventArgs e)
+		{
+			node_screen.IsDirty = true;
+			node_window_messages.IsDirty = true;
+		};
+		a_OnStartGameButtonUnselected = delegate (object? sender, EventArgs e) { };
+		a_OnStartGameButtonPressed = delegate (object? sender, EventArgs e)
+		{
+			node_screen.IsDirty = true;
+			node_window_map.IsDirty = true;
+			node_window_attributes.IsDirty = true;
+			node_window_messages.IsDirty = true;
+			node_window_status.IsDirty = true;
+
+			ActiveWindowIndex = 1;
+			node_window_map.IsVisible = true;
+			node_window_title.IsVisible = false;
+		};
+
+		a_OnDeleteGameButtonSelected = delegate (object? sender, EventArgs e)
+		{
+			node_screen.IsDirty = true;
+			node_window_messages.IsDirty = true;
+		};
+		a_OnDeleteGameButtonUnselected = delegate (object? sender, EventArgs e) { };
+		a_OnDeleteGameButtonPressed = delegate (object? sender, EventArgs e) { };
+
+		a_OnTutorialButtonSelected = delegate (object? sender, EventArgs e)
+		{
+			node_screen.IsDirty = true;
+			node_window_messages.IsDirty = true;
+		};
+		a_OnTutorialButtonUnselected = delegate (object? sender, EventArgs e) { };
+		a_OnTutorialButtonPressed = delegate (object? sender, EventArgs e) { };
+
+		a_OnOptionsButtonSelected = delegate (object? sender, EventArgs e)
+		{
+			node_screen.IsDirty = true;
+			node_window_messages.IsDirty = true;
+		};
+		a_OnOptionsButtonUnselected = delegate (object? sender, EventArgs e) { };
+		a_OnOptionsButtonPressed = delegate (object? sender, EventArgs e) { };
+
+		a_OnExitGameButtonSelected = delegate (object? sender, EventArgs e)
+		{
+			node_screen.IsDirty = true;
+			node_window_messages.IsDirty = true;
+		};
+		a_OnExitGameButtonUnselected = delegate (object? sender, EventArgs e) { };
+		a_OnExitGameButtonPressed = delegate (object? sender, EventArgs e)
+		{
+			RootNode.Instance.Quit();
+		};
+
+		a_OnPressedEscape = delegate (object? sender, EventArgs e)
+		{
+			node_window_title.IsVisible = true;
+			node_window_map.IsVisible = false;
+			ActiveWindowIndex = 4;
+
+			node_screen.IsDirty = true;
+			node_window_title.IsDirty = true;
+		};
+
 		node_map.MapChunkAdded += a_OnMapChunkAdded;
 		node_map.MapChunkRemoved += a_OnMapChunkRemoved;
 		node_map.MapChunkLoaded += a_OnMapChunkLoaded;
@@ -335,9 +416,31 @@ public class Game : Node2D
 		node_player.MaxHealthChanged += a_OnPlayerMaxHealthChanged;
 
 		node_camera.PositionChanged += a_OnCameraPositionChanged;
+
+		node_window_menu.StartGameButton.Selected += a_OnStartGameButtonSelected;
+		node_window_menu.StartGameButton.Unselected += a_OnStartGameButtonUnselected;
+		node_window_menu.StartGameButton.Pressed += a_OnStartGameButtonPressed;
+
+		node_window_menu.DeleteGameButton.Selected += a_OnDeleteGameButtonSelected;
+		node_window_menu.DeleteGameButton.Unselected += a_OnDeleteGameButtonUnselected;
+		node_window_menu.DeleteGameButton.Pressed += a_OnDeleteGameButtonPressed;
+
+		node_window_menu.TutorialButton.Selected += a_OnTutorialButtonSelected;
+		node_window_menu.TutorialButton.Unselected += a_OnTutorialButtonUnselected;
+		node_window_menu.TutorialButton.Pressed += a_OnTutorialButtonPressed;
+
+		node_window_menu.OptionsButton.Selected += a_OnOptionsButtonSelected;
+		node_window_menu.OptionsButton.Unselected += a_OnOptionsButtonUnselected;
+		node_window_menu.OptionsButton.Pressed += a_OnOptionsButtonPressed;
+
+		node_window_menu.ExitGameButton.Selected += a_OnExitGameButtonSelected;
+		node_window_menu.ExitGameButton.Unselected += a_OnExitGameButtonUnselected;
+		node_window_menu.ExitGameButton.Pressed += a_OnExitGameButtonPressed;
+
+		node_window_map.PressedEscape += a_OnPressedEscape;
 	}
 
-	public override void Ready ()
+	public override void Ready()
 	{
 		base.Ready();
 
@@ -387,28 +490,25 @@ public class Game : Node2D
 		Draw();
 	}
 
+	public override void Tick()
+	{
+		Windows[ActiveWindowIndex].Tick();
+	}
+
 	#endregion // Node2D methods
 
 
 
 	#region Public methods
 
-	public void Tick (ConsoleKeyInfo consoleKeyInfo)
-	{
-		m_steps++;
-		TickPlayer(consoleKeyInfo);
-		TickActors();
-		TickCamera();
-	}
-
-	public void Draw ()
+	public void Draw()
 	{
 		if (node_screen.IsDirty)
 		{
 			node_screen.IsDirty = false;
 			node_screen.Clear();
 
-			foreach (Window window in m_windows)
+			foreach (Window window in Windows)
 			{
 				if (window.IsDirty)
 				{
@@ -420,7 +520,7 @@ public class Game : Node2D
 
 		if (node_screen.IsVisible)
 		{
-			foreach (Window window in m_windows)
+			foreach (Window window in Windows)
 			{
 				DrawWindow(window, node_screen);
 			}
@@ -430,7 +530,7 @@ public class Game : Node2D
 		Console.Write(node_screen.ToString());
 	}
 
-	public bool IsClear (Point position)
+	public bool IsClear(Point position)
 	{
 		bool isFloor = false;
 		bool isWall = false;
@@ -478,13 +578,14 @@ public class Game : Node2D
 			for (int i = 0; i < node_map.ActiveMapChunks.Count; i++)
 			{
 				ThreadPool.QueueUserWorkItem(
-					new WaitCallback(x => {
+					new WaitCallback(x =>
+					{
 						ProcessChunk(x);
 						if (Interlocked.Decrement(ref activeChunksLeftCount) == 0)
 						{
 							resetEvent.Set();
 						}
-					}),node_map.ActiveMapChunks[i]);
+					}), node_map.ActiveMapChunks[i]);
 			}
 			resetEvent.WaitOne();
 		}
@@ -492,168 +593,17 @@ public class Game : Node2D
 		return isFloor && !isWall && !isPlayer && !isActor;
 	}
 
-	public bool IsClear (int x, int y)
+	public bool IsClear(int x, int y)
 	{
 		return IsClear(new Point(x, y));
 	}
 
-	#endregion // Public methods
-
-
-
-	#region Private methods
-
-	private void UpdateLoadedMapChunks (int mapChunkPositionX, int mapChunkPositionY)
-	{
-		node_screen.IsDirty = true;
-		node_window_map.IsDirty = true;
-		node_window_messages.IsDirty = true;
-
-		m_currentMapChunkPosition = (mapChunkPositionX, mapChunkPositionY);
-
-		(int x, int y) _chunk = (mapChunkPositionX, mapChunkPositionY);
-
-		for (int i = -1; i >= -node_map.MapChunkLoadDistance; i--)
-		{
-			if (!node_map.IsMapChunkAtPosition(mapChunkPositionX + i, mapChunkPositionY))
-			{
-				_chunk.x += 1;
-			}
-			if (!node_map.IsMapChunkAtPosition(mapChunkPositionX, mapChunkPositionY + i))
-			{
-				_chunk.y += 1;
-			}
-		}
-		for (int i = 1; i <= node_map.MapChunkLoadDistance; i++)
-		{
-			if (!node_map.IsMapChunkAtPosition(mapChunkPositionX + i, mapChunkPositionY))
-			{
-				_chunk.x -= 1;
-			}
-			if (!node_map.IsMapChunkAtPosition(mapChunkPositionX, mapChunkPositionY + i))
-			{
-				_chunk.y -= 1;
-			}
-		}
-
-		List<MapChunk> newMapChunks = new List<MapChunk>();
-
-		for (int i = -node_map.MapChunkLoadDistance; i <= node_map.MapChunkLoadDistance; i++)
-		{
-			for (int j = -node_map.MapChunkLoadDistance; j <= node_map.MapChunkLoadDistance; j++)
-			{
-				int x = _chunk.x + j;
-				int y = _chunk.y + i;
-				MapChunk mapChunk = node_map.GetMapChunk(x, y);
-
-				newMapChunks.Add(mapChunk);
-
-				if (!node_map.IsMapChunkLoaded(mapChunk))
-				{
-					node_map.LoadMapChunk(mapChunk);
-				}
-			}
-		}
-
-		for (int i = 0; i < node_map.ActiveMapChunks.Count; i++)
-		{
-			MapChunk mapChunk = node_map.ActiveMapChunks[i];
-
-			if (!newMapChunks.Contains(mapChunk))
-			{
-				node_map.UnloadMapChunk(mapChunk);
-				i--;
-			}
-		}
-	}
-
-	private void DrawWindow (Window window, Screen target)
-	{
-		if (!window.IsVisible) return;
-
-		Point windowGlobalPosition = window.GlobalPosition;
-		char[] borderStyle = new char[8];
-
-		switch (window.BorderStyle)
-		{
-			case Window.EBorderStyle.None:
-				borderStyle = new char[8] { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' };
-				break;
-			case Window.EBorderStyle.Squared:
-				borderStyle = new char[8] { '─', '─', '│', '│', '┌', '┐', '└', '┘' };
-				break;
-			case Window.EBorderStyle.Rounded:
-				borderStyle = new char[8] { '─', '─', '│', '│', '╭', '╮', '╰', '╯' };
-				break;
-			case Window.EBorderStyle.DashedSquared:
-				borderStyle = new char[8] { '-', '-', '|', '|', '┌', '┐', '└', '┘' };
-				break;
-			case Window.EBorderStyle.DashedRounded:
-				borderStyle = new char[8] { '-', '-', '|', '|', '╭', '╮', '╰', '╯' };
-				break;
-			case Window.EBorderStyle.DashedPlus:
-				borderStyle = new char[8] { '-', '-', '|', '|', '+', '+', '+', '+' };
-				break;
-			default:
-				borderStyle = new char[8] { '─', '─', '│', '│', '┌', '┐', '└', '┘' };
-				break;
-		}
-
-		target.DrawLine(windowGlobalPosition.X + 1, windowGlobalPosition.Y, Screen.EDirection.Right, window.Width - 2, borderStyle[0]);
-		target.DrawLine(windowGlobalPosition.X + 1, windowGlobalPosition.Y + window.Height - 1, Screen.EDirection.Right, window.Width - 2, borderStyle[1]);
-		target.DrawLine(windowGlobalPosition.X, windowGlobalPosition.Y + 1, Screen.EDirection.Down, window.Height - 2, borderStyle[2]);
-		target.DrawLine(windowGlobalPosition.X + window.Width - 1, windowGlobalPosition.Y + 1, Screen.EDirection.Down, window.Height - 2, borderStyle[3]);
-		target.SetSymbol(windowGlobalPosition.X, windowGlobalPosition.Y, borderStyle[4]);
-		target.SetSymbol(windowGlobalPosition.X + window.Width - 1, windowGlobalPosition.Y, borderStyle[5]);
-		target.SetSymbol(windowGlobalPosition.X, windowGlobalPosition.Y + window.Height - 1, borderStyle[6]);
-		target.SetSymbol(windowGlobalPosition.X + window.Width - 1, windowGlobalPosition.Y + window.Height - 1, borderStyle[7]);
-		target.DrawText(windowGlobalPosition.X + 2, windowGlobalPosition.Y, Screen.EDirection.Right, window.Title);
-
-		DrawScreen(window.Screen, target);
-	}
-
-	private void DrawScreen (Screen screen, Screen targetScreen)
-	{
-		if (!screen.IsVisible) return;
-
-		Point screenGlobalPosition = screen.GlobalPosition;
-		for (int i = 0; i < screen.Height; i++)
-		{
-			for (int j = 0; j < screen.Width; j++)
-			{
-				int x = j + screenGlobalPosition.X;
-				int y = i + screenGlobalPosition.Y;
-
-				if (x < 0 || x >= targetScreen.Width) continue;
-				if (y < 0 || y >= targetScreen.Height) continue;
-
-				char symbol = screen.GetSymbol(j, i);
-
-				if (symbol != ' ' || !screen.IsSpaceTransparent)
-				{
-					targetScreen.SetSymbol(x, y, symbol);
-				}
-			}
-		}
-	}
-
-	private void RecalculateCameraBounds ()
-	{
-		Point currentMapChunkPosition = new Point(m_currentMapChunkPosition.x, m_currentMapChunkPosition.y);
-		MapChunk currentMapChunk = node_map.GetMapChunk(currentMapChunkPosition);
-
-		int left = node_map.AllMapChunks.Min(_ => _.GlobalPosition.X);
-		int right = node_map.AllMapChunks.Max(_ => _.GlobalPosition.X) + currentMapChunk.Width - 1;
-		int up = node_map.AllMapChunks.Min(_ => _.GlobalPosition.Y);
-		int down = node_map.AllMapChunks.Max(_ => _.GlobalPosition.Y) + currentMapChunk.Height - 1;
-
-		node_camera.SetBounds(left, right, up, down);
-	}
-
-	private void TickPlayer (ConsoleKeyInfo consoleKeyInfo)
+	public void TickPlayer()
 	{
 		Point position = node_player.Position;
 		Point globalPosition = node_player.GlobalPosition;
+
+		ConsoleKeyInfo consoleKeyInfo = Input.LastConsoleKeyInfo;
 
 		if (consoleKeyInfo.KeyChar == '4')
 		{
@@ -730,7 +680,7 @@ public class Game : Node2D
 		}
 	}
 
-	private void TickActors ()
+	public void TickActors()
 	{
 		foreach (Actor actor in node_map.ActiveActors)
 		{
@@ -768,10 +718,163 @@ public class Game : Node2D
 		}
 	}
 
-	private void TickCamera ()
+	public void TickCamera()
 	{
 		node_camera.CenterOnPosition(node_player.GlobalPosition);
 		node_camera.ClampToBounds();
+	}
+
+	#endregion // Public methods
+
+
+
+	#region Private methods
+
+	private void UpdateLoadedMapChunks(int mapChunkPositionX, int mapChunkPositionY)
+	{
+		node_screen.IsDirty = true;
+		node_window_map.IsDirty = true;
+		node_window_messages.IsDirty = true;
+
+		m_currentMapChunkPosition = (mapChunkPositionX, mapChunkPositionY);
+
+		(int x, int y) _chunk = (mapChunkPositionX, mapChunkPositionY);
+
+		for (int i = -1; i >= -node_map.MapChunkLoadDistance; i--)
+		{
+			if (!node_map.IsMapChunkAtPosition(mapChunkPositionX + i, mapChunkPositionY))
+			{
+				_chunk.x += 1;
+			}
+			if (!node_map.IsMapChunkAtPosition(mapChunkPositionX, mapChunkPositionY + i))
+			{
+				_chunk.y += 1;
+			}
+		}
+		for (int i = 1; i <= node_map.MapChunkLoadDistance; i++)
+		{
+			if (!node_map.IsMapChunkAtPosition(mapChunkPositionX + i, mapChunkPositionY))
+			{
+				_chunk.x -= 1;
+			}
+			if (!node_map.IsMapChunkAtPosition(mapChunkPositionX, mapChunkPositionY + i))
+			{
+				_chunk.y -= 1;
+			}
+		}
+
+		List<MapChunk> newMapChunks = new List<MapChunk>();
+
+		for (int i = -node_map.MapChunkLoadDistance; i <= node_map.MapChunkLoadDistance; i++)
+		{
+			for (int j = -node_map.MapChunkLoadDistance; j <= node_map.MapChunkLoadDistance; j++)
+			{
+				int x = _chunk.x + j;
+				int y = _chunk.y + i;
+				MapChunk mapChunk = node_map.GetMapChunk(x, y);
+
+				newMapChunks.Add(mapChunk);
+
+				if (!node_map.IsMapChunkLoaded(mapChunk))
+				{
+					node_map.LoadMapChunk(mapChunk);
+				}
+			}
+		}
+
+		for (int i = 0; i < node_map.ActiveMapChunks.Count; i++)
+		{
+			MapChunk mapChunk = node_map.ActiveMapChunks[i];
+
+			if (!newMapChunks.Contains(mapChunk))
+			{
+				node_map.UnloadMapChunk(mapChunk);
+				i--;
+			}
+		}
+	}
+
+	private void DrawWindow(Window window, Screen target)
+	{
+		if (!window.IsVisible) return;
+
+		Point windowGlobalPosition = window.GlobalPosition;
+		char[] borderStyle = new char[8];
+
+		switch (window.BorderStyle)
+		{
+			case Window.EBorderStyle.None:
+				borderStyle = new char[8] { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' };
+				break;
+			case Window.EBorderStyle.Squared:
+				borderStyle = new char[8] { '─', '─', '│', '│', '┌', '┐', '└', '┘' };
+				break;
+			case Window.EBorderStyle.Rounded:
+				borderStyle = new char[8] { '─', '─', '│', '│', '╭', '╮', '╰', '╯' };
+				break;
+			case Window.EBorderStyle.DashedSquared:
+				borderStyle = new char[8] { '-', '-', '|', '|', '┌', '┐', '└', '┘' };
+				break;
+			case Window.EBorderStyle.DashedRounded:
+				borderStyle = new char[8] { '-', '-', '|', '|', '╭', '╮', '╰', '╯' };
+				break;
+			case Window.EBorderStyle.DashedPlus:
+				borderStyle = new char[8] { '-', '-', '|', '|', '+', '+', '+', '+' };
+				break;
+			default:
+				borderStyle = new char[8] { '─', '─', '│', '│', '┌', '┐', '└', '┘' };
+				break;
+		}
+
+		target.DrawLine(windowGlobalPosition.X + 1, windowGlobalPosition.Y, Screen.EDirection.Right, window.Width - 2, borderStyle[0]);
+		target.DrawLine(windowGlobalPosition.X + 1, windowGlobalPosition.Y + window.Height - 1, Screen.EDirection.Right, window.Width - 2, borderStyle[1]);
+		target.DrawLine(windowGlobalPosition.X, windowGlobalPosition.Y + 1, Screen.EDirection.Down, window.Height - 2, borderStyle[2]);
+		target.DrawLine(windowGlobalPosition.X + window.Width - 1, windowGlobalPosition.Y + 1, Screen.EDirection.Down, window.Height - 2, borderStyle[3]);
+		target.SetSymbol(windowGlobalPosition.X, windowGlobalPosition.Y, borderStyle[4]);
+		target.SetSymbol(windowGlobalPosition.X + window.Width - 1, windowGlobalPosition.Y, borderStyle[5]);
+		target.SetSymbol(windowGlobalPosition.X, windowGlobalPosition.Y + window.Height - 1, borderStyle[6]);
+		target.SetSymbol(windowGlobalPosition.X + window.Width - 1, windowGlobalPosition.Y + window.Height - 1, borderStyle[7]);
+		target.DrawText(windowGlobalPosition.X + 2, windowGlobalPosition.Y, Screen.EDirection.Right, window.Title);
+
+		DrawScreen(window.Screen, target);
+	}
+
+	private void DrawScreen(Screen screen, Screen targetScreen)
+	{
+		if (!screen.IsVisible) return;
+
+		Point screenGlobalPosition = screen.GlobalPosition;
+		for (int i = 0; i < screen.Height; i++)
+		{
+			for (int j = 0; j < screen.Width; j++)
+			{
+				int x = j + screenGlobalPosition.X;
+				int y = i + screenGlobalPosition.Y;
+
+				if (x < 0 || x >= targetScreen.Width) continue;
+				if (y < 0 || y >= targetScreen.Height) continue;
+
+				char symbol = screen.GetSymbol(j, i);
+
+				if (symbol != ' ' || !screen.IsSpaceTransparent)
+				{
+					targetScreen.SetSymbol(x, y, symbol);
+				}
+			}
+		}
+	}
+
+	private void RecalculateCameraBounds()
+	{
+		Point currentMapChunkPosition = new Point(m_currentMapChunkPosition.x, m_currentMapChunkPosition.y);
+		MapChunk currentMapChunk = node_map.GetMapChunk(currentMapChunkPosition);
+
+		int left = node_map.AllMapChunks.Min(_ => _.GlobalPosition.X);
+		int right = node_map.AllMapChunks.Max(_ => _.GlobalPosition.X) + currentMapChunk.Width - 1;
+		int up = node_map.AllMapChunks.Min(_ => _.GlobalPosition.Y);
+		int down = node_map.AllMapChunks.Max(_ => _.GlobalPosition.Y) + currentMapChunk.Height - 1;
+
+		node_camera.SetBounds(left, right, up, down);
 	}
 
 	#endregion // Private methods

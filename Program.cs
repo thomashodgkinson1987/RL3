@@ -5,27 +5,20 @@ class Program
 	{
 		Console.CursorVisible = false;
 
+		Input input = new Input();
 		Random rng = new Random();
+		Game game = new Game(rng);
 
-		Game game = new Game("Game", rng);
 		RootNode.Instance.AddChild(game);
-
 		RootNode.Instance.Init();
 		RootNode.Instance.Ready();
 
-		while (true)
+		while (!RootNode.Instance.IsQuit)
 		{
 			ConsoleKeyInfo consoleKeyInfo = Console.ReadKey(true);
-
-			if (consoleKeyInfo.KeyChar == 'q')
-			{
-				break;
-			}
-			else
-			{
-				game.Tick(consoleKeyInfo);
-				game.Draw();
-			}
+			input.SetLastConsoleKeyInfo(consoleKeyInfo);
+			game.Tick();
+			game.Draw();
 		}
 	}
 
