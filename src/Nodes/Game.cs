@@ -374,6 +374,7 @@ public class Game : Node2D
 				else if (c == 2) mapChunk = StaticMapChunks.GetMapChunk3();
 				else if (c == 3) mapChunk = StaticMapChunks.GetMapChunk4(m_rng);
 				else if (c == 4) mapChunk = StaticMapChunks.GetMapChunk5(m_rng);
+				else if (c == 5) mapChunk = StaticMapChunks.GetMapChunk6();
 
 				for (int k = 0; k < m_rng.Next(0, 5); k++)
 				{
