@@ -1,6 +1,14 @@
 public class Player : Actor
 {
 
+	#region Nodes
+
+	public AnimatedSprite node_AnimatedSprite { get; }
+
+	#endregion // Nodes
+
+
+
 	#region Properties
 
 	private int _health;
@@ -59,6 +67,22 @@ public class Player : Actor
 
 	public Player(string name, int x, int y) : base(name, x, y, '@')
 	{
+		List<SpriteFrame> frames = new List<SpriteFrame>()
+		{
+			new SpriteFrame(ConsoleColor.Blue, ConsoleColor.White, '@'),
+			new SpriteFrame(ConsoleColor.Magenta, ConsoleColor.White, '@'),
+			new SpriteFrame(ConsoleColor.Green, ConsoleColor.White, '@')
+		};
+
+		List<SpriteAnimation> spriteAnimations = new List<SpriteAnimation>()
+		{
+			new SpriteAnimation("default", frames, 1, true)
+		};
+
+		node_AnimatedSprite = new AnimatedSprite(spriteAnimations);
+
+		AddChild(node_AnimatedSprite);
+
 		_health = 10;
 		_maxHealth = 10;
 	}
@@ -70,6 +94,24 @@ public class Player : Actor
 	public Player() : this("Player", 0, 0) { }
 
 	#endregion // Constructors
+
+
+
+	#region Node2D methods
+
+	public override void Ready()
+	{
+		base.Ready();
+
+		node_AnimatedSprite.Play("default");
+	}
+
+	public override void Tick(float delta)
+	{
+		node_AnimatedSprite.AdvanceAnimation(delta);
+	}
+
+	#endregion // Node2D methods
 
 
 

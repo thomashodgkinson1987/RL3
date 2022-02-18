@@ -437,7 +437,7 @@ public class Game : Node2D
 		node_window_menu.ExitGameButton.Unselected += a_OnExitGameButtonUnselected;
 		node_window_menu.ExitGameButton.Pressed += a_OnExitGameButtonPressed;
 
-		node_window_map.PressedEscape += a_OnPressedEscape;
+		node_window_map.PressedEscapeOnMapWindow += a_OnPressedEscape;
 	}
 
 	public override void Ready()
@@ -490,9 +490,24 @@ public class Game : Node2D
 		Draw();
 	}
 
-	public override void Tick()
+	public override void ProcessInput(ConsoleKeyInfo consoleKeyInfo)
 	{
-		Windows[ActiveWindowIndex].Tick();
+		Windows[ActiveWindowIndex].ProcessInput(consoleKeyInfo);
+	}
+
+	public override void InputTick(float delta)
+	{
+		Windows[ActiveWindowIndex].InputTick(delta);
+	}
+
+	public override void FixedTick(float delta)
+	{
+		Windows[ActiveWindowIndex].FixedTick(delta);
+	}
+
+	public override void Tick(float delta)
+	{
+		Windows[ActiveWindowIndex].Tick(delta);
 	}
 
 	#endregion // Node2D methods
@@ -516,18 +531,26 @@ public class Game : Node2D
 					window.Refresh();
 				}
 			}
-		}
 
-		if (node_screen.IsVisible)
-		{
-			foreach (Window window in Windows)
+			if (node_screen.IsVisible)
 			{
-				DrawWindow(window, node_screen);
+				foreach (Window window in Windows)
+				{
+					DrawWindow(window, node_screen);
+				}
+			}
+
+			for (int i = 0; i < node_screen.Height; i++)
+			{
+				Console.SetCursorPosition(0, i);
+				for (int j = 0; j < node_screen.Width; j++)
+				{
+					Console.BackgroundColor = node_screen.Pixels[i,j].BackgroundColor;
+					Console.ForegroundColor = node_screen.Pixels[i,j].ForegroundColor;
+					Console.Write(node_screen.Pixels[i,j].Symbol);
+				}
 			}
 		}
-
-		Console.SetCursorPosition(0, 0);
-		Console.Write(node_screen.ToString());
 	}
 
 	public bool IsClear(Point position)
@@ -680,7 +703,7 @@ public class Game : Node2D
 		}
 	}
 
-	public void TickActors()
+	public void TickActors(float delta)
 	{
 		foreach (Actor actor in node_map.ActiveActors)
 		{
@@ -690,7 +713,7 @@ public class Game : Node2D
 			int oldMapChunkPositionY = (int)MathF.Floor(oldActorGlobalPosition.Y / 16f);
 			Point oldMapChunkPosition = new Point(oldMapChunkPositionX, oldMapChunkPositionY);
 
-			actor.Tick();
+			actor.Tick(delta);
 
 			Point newActorPosition = actor.Position;
 			Point newActorGlobalPosition = actor.GlobalPosition;
@@ -799,42 +822,16 @@ public class Game : Node2D
 		if (!window.IsVisible) return;
 
 		Point windowGlobalPosition = window.GlobalPosition;
-		char[] borderStyle = new char[8];
 
-		switch (window.BorderStyle)
-		{
-			case Window.EBorderStyle.None:
-				borderStyle = new char[8] { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' };
-				break;
-			case Window.EBorderStyle.Squared:
-				borderStyle = new char[8] { '─', '─', '│', '│', '┌', '┐', '└', '┘' };
-				break;
-			case Window.EBorderStyle.Rounded:
-				borderStyle = new char[8] { '─', '─', '│', '│', '╭', '╮', '╰', '╯' };
-				break;
-			case Window.EBorderStyle.DashedSquared:
-				borderStyle = new char[8] { '-', '-', '|', '|', '┌', '┐', '└', '┘' };
-				break;
-			case Window.EBorderStyle.DashedRounded:
-				borderStyle = new char[8] { '-', '-', '|', '|', '╭', '╮', '╰', '╯' };
-				break;
-			case Window.EBorderStyle.DashedPlus:
-				borderStyle = new char[8] { '-', '-', '|', '|', '+', '+', '+', '+' };
-				break;
-			default:
-				borderStyle = new char[8] { '─', '─', '│', '│', '┌', '┐', '└', '┘' };
-				break;
-		}
-
-		target.DrawLine(windowGlobalPosition.X + 1, windowGlobalPosition.Y, Screen.EDirection.Right, window.Width - 2, borderStyle[0]);
-		target.DrawLine(windowGlobalPosition.X + 1, windowGlobalPosition.Y + window.Height - 1, Screen.EDirection.Right, window.Width - 2, borderStyle[1]);
-		target.DrawLine(windowGlobalPosition.X, windowGlobalPosition.Y + 1, Screen.EDirection.Down, window.Height - 2, borderStyle[2]);
-		target.DrawLine(windowGlobalPosition.X + window.Width - 1, windowGlobalPosition.Y + 1, Screen.EDirection.Down, window.Height - 2, borderStyle[3]);
-		target.SetSymbol(windowGlobalPosition.X, windowGlobalPosition.Y, borderStyle[4]);
-		target.SetSymbol(windowGlobalPosition.X + window.Width - 1, windowGlobalPosition.Y, borderStyle[5]);
-		target.SetSymbol(windowGlobalPosition.X, windowGlobalPosition.Y + window.Height - 1, borderStyle[6]);
-		target.SetSymbol(windowGlobalPosition.X + window.Width - 1, windowGlobalPosition.Y + window.Height - 1, borderStyle[7]);
-		target.DrawText(windowGlobalPosition.X + 2, windowGlobalPosition.Y, Screen.EDirection.Right, window.Title);
+		target.DrawLine(windowGlobalPosition.X, windowGlobalPosition.Y + 1, Screen.EDirection.Down, window.Height - 2, ConsoleColor.Black, ConsoleColor.White, '|', false);
+		target.DrawLine(windowGlobalPosition.X + window.Width - 1, windowGlobalPosition.Y + 1, Screen.EDirection.Down, window.Height - 2, ConsoleColor.Black, ConsoleColor.White, '|', false);
+		target.DrawLine(windowGlobalPosition.X + 1, windowGlobalPosition.Y, Screen.EDirection.Right, window.Width - 2, ConsoleColor.Black, ConsoleColor.White, '-', false);
+		target.DrawLine(windowGlobalPosition.X + 1, windowGlobalPosition.Y + window.Height - 1, Screen.EDirection.Right, window.Width - 2, ConsoleColor.Black, ConsoleColor.White, '-', false);
+		target.SetPixel(windowGlobalPosition.X, windowGlobalPosition.Y, ConsoleColor.Black, ConsoleColor.White, '+', false);
+		target.SetPixel(windowGlobalPosition.X + window.Width - 1, windowGlobalPosition.Y, ConsoleColor.Black, ConsoleColor.White, '+', false);
+		target.SetPixel(windowGlobalPosition.X, windowGlobalPosition.Y + window.Height - 1, ConsoleColor.Black, ConsoleColor.White, '+', false);
+		target.SetPixel(windowGlobalPosition.X + window.Width - 1, windowGlobalPosition.Y + window.Height - 1, ConsoleColor.Black, ConsoleColor.White, '+', false);
+		target.DrawText(windowGlobalPosition.X + 2, windowGlobalPosition.Y, Screen.EDirection.Right, ConsoleColor.Black, ConsoleColor.White, window.Title, false);
 
 		DrawScreen(window.Screen, target);
 	}
@@ -854,11 +851,15 @@ public class Game : Node2D
 				if (x < 0 || x >= targetScreen.Width) continue;
 				if (y < 0 || y >= targetScreen.Height) continue;
 
-				char symbol = screen.GetSymbol(j, i);
+				Pixel pixel = screen.GetPixel(j, i);
+				ConsoleColor bgc = pixel.BackgroundColor;
+				ConsoleColor fgc = pixel.ForegroundColor;
+				char symbol = pixel.Symbol;
+				bool isTransparent = pixel.IsTransparent;
 
-				if (symbol != ' ' || !screen.IsSpaceTransparent)
+				if (!isTransparent)
 				{
-					targetScreen.SetSymbol(x, y, symbol);
+					targetScreen.SetPixel(x, y, bgc, fgc, symbol, isTransparent);
 				}
 			}
 		}

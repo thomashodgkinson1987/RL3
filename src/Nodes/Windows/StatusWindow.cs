@@ -11,7 +11,7 @@ public class StatusWindow : Window
 
 	#region Constructors
 
-	public StatusWindow (int x, int y, Game game, int width, int height, EBorderStyle borderStyle = EBorderStyle.DashedPlus) : base ("MapWindow", x, y, "Status", width, height, borderStyle)
+	public StatusWindow (int x, int y, Game game, int width, int height, EBorderStyle borderStyle = EBorderStyle.DashedPlus) : base ("StatusWindow", x, y, "Status", width, height, borderStyle)
 	{
 		m_game = game;
 	}
@@ -26,10 +26,10 @@ public class StatusWindow : Window
 	{
 		base.Refresh();
 
-		Screen.DrawText(1, 1, Screen.EDirection.Right, "exploring");
-		Screen.DrawText(1, 2, Screen.EDirection.Right, "martial combo<1>");
-		Screen.DrawText(1, 3, Screen.EDirection.Right, "duel wield");
-		Screen.DrawText(1, 4, Screen.EDirection.Right, "in light");
+		Screen.DrawText(1, 1, Screen.EDirection.Right, ConsoleColor.Black, ConsoleColor.White, "exploring", false);
+		Screen.DrawText(1, 2, Screen.EDirection.Right, ConsoleColor.Black, ConsoleColor.White, "martial combo<1>", false);
+		Screen.DrawText(1, 3, Screen.EDirection.Right, ConsoleColor.Black, ConsoleColor.White, "duel wield", false);
+		Screen.DrawText(1, 4, Screen.EDirection.Right, ConsoleColor.Black, ConsoleColor.White, "in light", false);
 	}
 
 	#endregion // Public methods

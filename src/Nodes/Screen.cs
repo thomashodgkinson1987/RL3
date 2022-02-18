@@ -15,14 +15,9 @@ public class Screen : Node2D
 
 	public int Width { get; }
 	public int Height { get; }
-
-	public char[,] Pixels { get; }
-
-	public char ClearSymbol { get; set; } = ' ';
-
-	public bool IsSpaceTransparent { get; set; } = true;
-
-	public bool IsDirty { get; set; } = true;
+	public Pixel[,] Pixels { get; }
+	public Pixel ClearPixel { get; set; }
+	public bool IsDirty { get; set; }
 
 	#endregion // Properties
 
@@ -34,7 +29,17 @@ public class Screen : Node2D
 	{
 		Width = width;
 		Height = height;
-		Pixels = new char[height,width];
+		Pixels = new Pixel[height,width];
+		ClearPixel = new Pixel(ConsoleColor.Black, ConsoleColor.White, ' ', false);
+		IsDirty = true;
+
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = 0; j < width; j++)
+			{
+				Pixels[i,j] = new Pixel(ConsoleColor.Black, ConsoleColor.White, ' ', false);
+			}
+		}
 	}
 
 	public Screen(string name, int width, int height) : this(name, 0, 0, width, height) { }
@@ -64,53 +69,57 @@ public class Screen : Node2D
 
 	#region Public methods
 
-	public char GetSymbol(int x, int y)
+	public Pixel GetPixel(int x, int y) => Pixels[y,x];
+	public Pixel GetPixel(Point position) => GetPixel(position.X, position.Y);
+
+	public void SetPixel(int x, int y, ConsoleColor backgroundColor, ConsoleColor foregroundColor, char symbol, bool isTransparent)
 	{
-		return Pixels[y,x];
+		Pixels[y,x].Set(backgroundColor, foregroundColor, symbol, isTransparent);
+	}
+	public void SetPixel(Point position, ConsoleColor backgroundColor, ConsoleColor foregroundColor, char symbol, bool isTransparent)
+	{
+		SetPixel(position.X, position.Y, backgroundColor, foregroundColor, symbol, isTransparent);
+	}
+	public void SetPixelFromPixel(int x, int y, Pixel pixel)
+	{
+		Pixels[y,x].BackgroundColor = pixel.BackgroundColor;
+		Pixels[y,x].ForegroundColor = pixel.ForegroundColor;
+		Pixels[y,x].Symbol = pixel.Symbol;
+		Pixels[y,x].IsTransparent = pixel.IsTransparent;
+	}
+	public void SetPixelFromPixel(Point position, Pixel pixel)
+	{
+		SetPixelFromPixel(position.X, position.Y, pixel);
 	}
 
-	public void SetSymbol(int x, int y, char symbol)
-	{
-		Pixels[y,x] = symbol;
-	}
+	public void Clear() => FillScreenWithPixel(ClearPixel);
 
-	public char GetSymbol(Point position)
-	{
-		return GetSymbol(position.X, position.Y);
-	}
+	public bool IsPositionOnScreen(int x, int y) => x >= 0 && x < Width && y >= 0 && y < Height;
+	public bool IsPositionOnScreen(Point position) => IsPositionOnScreen(position.X, position.Y);
 
-	public void SetSymbol(Point position, char symbol)
-	{
-		SetSymbol(position.X, position.Y, symbol);
-	}
-
-	public void Clear()
-	{
-		FillScreen(ClearSymbol);
-	}
-
-	public bool IsPositionOnScreen(int x, int y)
-	{
-		return x >= 0 && x < Width && y >= 0 && y < Height;
-	}
-
-	public bool IsPositionOnScreen(Point position)
-	{
-		return IsPositionOnScreen(position.X, position.Y);
-	}
-
-	public void FillScreen(char symbol)
+	public void FillScreen(ConsoleColor backgroundColor, ConsoleColor foregroundColor, char symbol, bool isTransparent)
 	{
 		for(int i = 0; i < Pixels.GetLength(0); i++)
 		{
 			for(int j = 0; j < Pixels.GetLength(1); j++)
 			{
-				Pixels[i,j] = symbol;
+				SetPixel(j, i, backgroundColor, foregroundColor, symbol, isTransparent);
 			}
 		}
 	}
 
-	public void FillScreen(Screen screen, bool skipSpaces = false)
+	public void FillScreenWithPixel(Pixel pixel)
+	{
+		for(int i = 0; i < Pixels.GetLength(0); i++)
+		{
+			for(int j = 0; j < Pixels.GetLength(1); j++)
+			{
+				FillScreen(pixel.BackgroundColor, pixel.ForegroundColor, pixel.Symbol, pixel.IsTransparent);
+			}
+		}
+	}
+
+	public void FillScreenFromScreen(Screen screen)
 	{
 		int rows = Pixels.GetLength(0) < screen.Pixels.GetLength(0) ? Pixels.GetLength(0) : screen.Pixels.GetLength(0);
 		int columns = Pixels.GetLength(1) < screen.Pixels.GetLength(1) ? Pixels.GetLength(1) : screen.Pixels.GetLength(1);
@@ -119,31 +128,38 @@ public class Screen : Node2D
 		{
 			for(int j = 0; j < columns; j++)
 			{
-				if (!skipSpaces || Pixels[i,j] != ' ')
-				{
-					Pixels[i,j] = screen.Pixels[i,j];
-				}
+				SetPixelFromPixel(j, i, screen.GetPixel(j, i));
 			}
 		}
 	}
 
-	public void FillRow(int row, char symbol)
+	public void FillRow(int row, ConsoleColor backgroundColor, ConsoleColor foregroundColor, char symbol, bool isTransparent)
 	{
 		for(int i = 0; i < Pixels.GetLength(1); i++)
 		{
-			Pixels[row, i] = symbol;
+			SetPixel(i, row, backgroundColor, foregroundColor, symbol, isTransparent);
 		}
 	}
 
-	public void FillColumn(int column, char symbol)
+	public void FillRowWithPixel(int row, Pixel pixel)
+	{
+		FillRow(row, pixel.BackgroundColor, pixel.ForegroundColor, pixel.Symbol, pixel.IsTransparent);
+	}
+
+	public void FillColumn(int column, ConsoleColor backgroundColor, ConsoleColor foregroundColor, char symbol, bool isTransparent)
 	{
 		for(int i = 0; i < Pixels.GetLength(0); i++)
 		{
-			Pixels[i, column] = symbol;
+			SetPixel(column, i, backgroundColor, foregroundColor, symbol, isTransparent);
 		}
 	}
 
-	public void DrawLine(int x, int y, EDirection direction, int length, char symbol)
+	public void FillColumnWithPixel(int column, Pixel pixel)
+	{
+		FillColumn(column, pixel.BackgroundColor, pixel.ForegroundColor, pixel.Symbol, pixel.IsTransparent);
+	}
+
+	public void DrawLine(int x, int y, EDirection direction, int length, ConsoleColor backgroundColor, ConsoleColor foregroundColor, char symbol, bool isTransparent)
 	{
 		int x2 = x;
 		int y2 = y;
@@ -175,12 +191,12 @@ public class Screen : Node2D
 			for(int j = _x1; j <= _x2; j++)
 			{
 				if (j < 0 || j > Width - 1) continue;
-				Pixels[i,j] = symbol;
+				SetPixel(j, i, backgroundColor, foregroundColor, symbol, isTransparent);
 			}
 		}
 	}
 
-	public void DrawText(int x, int y, EDirection direction, string text)
+	public void DrawText(int x, int y, EDirection direction, ConsoleColor backgroundColor, ConsoleColor foregroundColor, string text, bool isTransparent)
 	{
 		int x2 = x;
 		int y2 = y;
@@ -217,12 +233,12 @@ public class Screen : Node2D
 				c++;
 				if (j < 0 || j > Width - 1) continue;
 				char symbol = text[c];
-				Pixels[i,j] = symbol;
+				SetPixel(j, i, backgroundColor, foregroundColor, symbol, isTransparent);
 			}
 		}
 	}
 
-	public void DrawRectangle(int x, int y, int width, int height, char symbol, bool fill = true)
+	public void DrawRectangle(int x, int y, int width, int height, ConsoleColor backgroundColor, ConsoleColor foregroundColor, char symbol, bool isTransparent, bool fill = true)
 	{
 		for(int i = y; i < y + height; i++)
 		{
@@ -232,13 +248,13 @@ public class Screen : Node2D
 				if (j < 0 || j > Width - 1) continue;
 				if (fill)
 				{
-					Pixels[i,j] = symbol;
+					SetPixel(j, i, backgroundColor, foregroundColor, symbol, isTransparent);
 				}
 				else
 				{
 					if((i == y || i == y + (height - 1)) || (j == x || j == x + (width - 1)))
 					{
-						Pixels[i,j] = symbol;
+						SetPixel(j, i, backgroundColor, foregroundColor, symbol, isTransparent);
 					}
 				}
 			}
@@ -253,7 +269,7 @@ public class Screen : Node2D
 		{
 			for(int j = 0; j < Pixels.GetLength(1); j++)
 			{
-				sb.Append(Pixels[i,j]);
+				sb.Append(Pixels[i,j].Symbol);
 			}
 			if (i < Pixels.GetLength(0) - 1)
 			{

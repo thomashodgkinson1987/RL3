@@ -21,7 +21,7 @@ public class MenuWindow : Window
 
 	#region Constructors
 
-	public MenuWindow(int x, int y, int width, int height, EBorderStyle borderStyle = EBorderStyle.DashedPlus) : base("MapWindow", x, y, "Menu", width, height, borderStyle)
+	public MenuWindow(int x, int y, int width, int height, EBorderStyle borderStyle = EBorderStyle.DashedPlus) : base("MenuWindow", x, y, "Menu", width, height, borderStyle)
 	{
 		StartGameButton = new Button("Start Game");
 		DeleteGameButton = new Button("Delete Game");
@@ -48,7 +48,7 @@ public class MenuWindow : Window
 
 	#region Node2D methods
 
-	public override void Tick()
+	public override void InputTick(float delta)
 	{
 		ConsoleKey key = Input.LastConsoleKeyInfo.Key;
 
@@ -93,13 +93,13 @@ public class MenuWindow : Window
 	{
 		base.Refresh();
 
-		Screen.DrawText(0, 0, Screen.EDirection.Right, "Start menu");
+		Screen.DrawText(0, 0, Screen.EDirection.Right, ConsoleColor.Black, ConsoleColor.White, "Start menu", false);
 
 		for (int i = 0; i < Buttons.Count; i++)
 		{
 			string entryString = string.Empty;
 			entryString = i == SelectionIndex ? $"{SelectionSymbol} {Buttons[i].Name}" : $"  {Buttons[i].Name}";
-			Screen.DrawText(0, i + 1, Screen.EDirection.Right, entryString);
+			Screen.DrawText(0, i + 1, Screen.EDirection.Right, ConsoleColor.Black, ConsoleColor.White, entryString, false);
 		}
 	}
 

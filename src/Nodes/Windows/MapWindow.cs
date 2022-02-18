@@ -11,7 +11,7 @@ public class MapWindow : Window
 
 	#region Events
 
-	public event EventHandler? PressedEscape;
+	public event EventHandler? PressedEscapeOnMapWindow;
 
 	#endregion // Events
 
@@ -30,28 +30,26 @@ public class MapWindow : Window
 
 	#region Public methods
 
-	public override void Tick ()
+	public override void InputTick (float delta)
 	{
 		ConsoleKey key = Input.LastConsoleKeyInfo.Key;
 
 		if (key == ConsoleKey.Escape)
 		{
-			EventHandler? handler = PressedEscape;
+			EventHandler? handler = PressedEscapeOnMapWindow;
 			handler?.Invoke(this, EventArgs.Empty);
 		}
 		else
 		{
 			m_game.Steps++;
 			m_game.TickPlayer();
-			m_game.TickActors();
+			m_game.TickActors(delta);
 			m_game.TickCamera();
 		}
 	}
 
-	public override void Refresh ()
+	public override void Tick(float delta)
 	{
-		base.Refresh();
-
 		int activeChunksLeftCount = m_game.Map.ActiveMapChunks.Count;
 		using (ManualResetEvent resetEvent = new ManualResetEvent(false))
 		{
@@ -74,9 +72,15 @@ public class MapWindow : Window
 			Point playerGlobalPosition = m_game.Player.GlobalPosition - m_game.Camera.GlobalPosition;
 			if (Screen.IsPositionOnScreen(playerGlobalPosition))
 			{
-				Screen.SetSymbol(playerGlobalPosition, m_game.Player.Symbol);
+				Screen.SetPixel(playerGlobalPosition, m_game.Player.node_AnimatedSprite.BackgroundColor, m_game.Player.node_AnimatedSprite.ForegroundColor, m_game.Player.node_AnimatedSprite.Symbol, false);
 			}
 		}
+	}
+
+	public override void Refresh ()
+	{
+		base.Refresh();
+
 	}
 
 	#endregion // Public methods
@@ -98,7 +102,7 @@ public class MapWindow : Window
 				Point floorGlobalPosition = globalPosition + floor.Position;
 				if (Screen.IsPositionOnScreen(floorGlobalPosition))
 				{
-					Screen.SetSymbol(floorGlobalPosition, floor.Symbol);
+					Screen.SetPixel(floorGlobalPosition, ConsoleColor.Black, ConsoleColor.White, floor.Symbol, false);
 				}
 			}
 			foreach (Wall wall in mapChunk.Walls)
@@ -108,7 +112,7 @@ public class MapWindow : Window
 				Point wallGlobalPosition = globalPosition + wall.Position;
 				if (Screen.IsPositionOnScreen(wallGlobalPosition))
 				{
-					Screen.SetSymbol(wallGlobalPosition, wall.Symbol);
+					Screen.SetPixel(wallGlobalPosition, ConsoleColor.Black, ConsoleColor.White, wall.Symbol, false);
 				}
 			}
 			foreach (Actor actor in mapChunk.Actors)
@@ -118,7 +122,14 @@ public class MapWindow : Window
 				Point actorGlobalPosition = globalPosition + actor.Position;
 				if (Screen.IsPositionOnScreen(actorGlobalPosition))
 				{
-					Screen.SetSymbol(actorGlobalPosition, actor.Symbol);
+					if (actor is NPC npc)
+					{
+						Screen.SetPixel(actorGlobalPosition, npc.node_AnimatedSprite.BackgroundColor, npc.node_AnimatedSprite.ForegroundColor, npc.node_AnimatedSprite.Symbol, false);
+					}
+					else
+					{
+						Screen.SetPixel(actorGlobalPosition, ConsoleColor.Black, ConsoleColor.White, actor.Symbol, false);
+					}
 				}
 			}
 		}

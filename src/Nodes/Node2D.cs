@@ -3,21 +3,7 @@ public class Node2D
 
 	#region Properties
 
-	private string _name;
-	public string Name
-	{
-		get => _name;
-		set
-		{
-			StringChangedEventArgs args = new StringChangedEventArgs();
-			args.StringBeforeChange = Name;
-			args.StringAfterChange = value;
-
-			_name = value;
-
-			OnNameChanged(args);
-		}
-	}
+	public string Name { get; set; }
 
 	private Point _position;
 	public Point Position
@@ -84,9 +70,8 @@ public class Node2D
 
 	public Node2D(string name, int x, int y)
 	{
-		_name = name;
+		Name = name;
 		_position = new Point(x, y);
-
 		Children = new List<Node2D>();
 	}
 
@@ -118,51 +103,31 @@ public class Node2D
 		}
 	}
 
-	public virtual void Tick() { }
+	public virtual void ProcessInput(ConsoleKeyInfo consoleKeyInfo) { }
 
-	public void SetPosition(Point position)
-	{
-		Position = position;
-	}
-	public void SetPosition(int x, int y)
-	{
-		SetPosition(new Point(x, y));
-	}
+	public virtual void InputTick(float delta) { }
 
-	public void SetPositionX(int x)
-	{
-		SetPosition(x, Position.Y);
-	}
+	public virtual void FixedTick(float delta) { }
 
-	public void SetPositionY(int y)
+	public virtual void Tick(float delta) { }
+
+	public virtual void Destroy()
 	{
-		SetPosition(Position.X, y);
+		foreach (Node2D node in Children)
+		{
+			node.Destroy();
+		}
 	}
 
-	public void Translate(Point translation)
-	{
-		SetPosition(Position + translation);
-	}
+	public void SetPosition(Point position) => Position = position;
+	public void SetPosition(int x, int y) => SetPosition(new Point(x, y));
+	public void SetPositionX(int x) => SetPosition(x, Position.Y);
+	public void SetPositionY(int y) => SetPosition(Position.X, y);
 
-	public void Translate(int dx, int dy)
-	{
-		Translate(new Point(dx, dy));
-	}
-
-	public void TranslateX(int dx)
-	{
-		Translate(dx, 0);
-	}
-
-	public void TranslateY(int dy)
-	{
-		Translate(0, dy);
-	}
-
-	public Node2D GetNode(int index)
-	{
-		return Children[index];
-	}
+	public void Translate(Point translation) => SetPosition(Position + translation);
+	public void Translate(int dx, int dy) => Translate(new Point(dx, dy));
+	public void TranslateX(int dx) => Translate(dx, 0);
+	public void TranslateY(int dy) => Translate(0, dy);
 
 	public Node2D GetNode(string name)
 	{
@@ -176,11 +141,6 @@ public class Node2D
 		{
 			throw new Exception();
 		}
-	}
-
-	public T GetNode<T>(int index) where T : Node2D
-	{
-		return (T)Children[index];
 	}
 
 	public T GetNode<T>(string name) where T : Node2D
@@ -221,22 +181,11 @@ public class Node2D
 		OnNodeRemoved(args);
 	}
 
-	public void RemoveChild(int index)
-	{
-		RemoveChild(Children[index]);
-	}
-
 	#endregion // Public methods
 
 
 
 	#region Private methods
-
-	protected virtual void OnNameChanged(StringChangedEventArgs e)
-	{
-		EventHandler<StringChangedEventArgs>? handler = NameChanged;
-		handler?.Invoke(this, e);
-	}
 
 	protected virtual void OnPositionChanged(PointChangedEventArgs e)
 	{
@@ -249,8 +198,6 @@ public class Node2D
 		EventHandler<BoolChangedEventArgs>? handler = IsVisibleChanged;
 		handler?.Invoke(this, e);
 	}
-
-
 
 	protected virtual void OnNodeAdded(NodeAddedEventArgs e)
 	{
